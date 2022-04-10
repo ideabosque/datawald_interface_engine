@@ -20,7 +20,7 @@ from .types import (
 )
 from tenacity import retry, wait_exponential, stop_after_attempt
 from pytz import timezone
-from aws_dynamodbconnector import DynamoDBConnector
+from dynamodb_connector import DynamoDBConnector
 
 sqs = None
 aws_lambda = None
