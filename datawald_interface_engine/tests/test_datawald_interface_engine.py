@@ -19,7 +19,7 @@ setting = {
 }
 
 sys.path.insert(0, "/var/www/projects/datawald_interface_engine")
-sys.path.insert(1, "/var/www/projects/aws_dynamodbconnector")
+sys.path.insert(1, "/var/www/projects/dynamodb_connector")
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 logger = logging.getLogger()
@@ -249,7 +249,7 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
-    # @unittest.skip("demonstrating skipping")
+    @unittest.skip("demonstrating skipping")
     def test_graphql_insert_sync_task(self):
         query = """
             mutation insertSyncTask(
@@ -468,17 +468,17 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
     def test_graphql_insert_product_metadata(self):
         query = """
             mutation insertProductMetadata(
-                    $target: String!,
+                    $targetSource: String!,
                     $column: String!,
                     $metadata: JSON!
                 ) {
                 insertProductMetadata(
-                    target: $target,
+                    targetSource: $targetSource,
                     column: $column,
                     metadata: $metadata
                 ) {
                     productMetadata{
-                        target
+                        targetSource
                         column
                         metadata
                         createdAt
@@ -488,7 +488,7 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
             }
         """
         variables = {
-            "target": "NS-MAGE2-SANDBOX",
+            "targetSource": "NS-MAGE2-SANDBOX",
             "column": "applications",
             "metadata": {
                 "dest": "applications",
@@ -523,17 +523,17 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
     def test_graphql_update_product_metadata(self):
         query = """
             mutation updateProductMetadata(
-                    $target: String!,
+                    $targetSource: String!,
                     $column: String!,
                     $metadata: JSON!
                 ) {
                 updateProductMetadata(
-                    target: $target,
+                    targetSource: $targetSource,
                     column: $column,
                     metadata: $metadata
                 ) {
                     productMetadata{
-                        target
+                        targetSource
                         column
                         metadata
                         createdAt
@@ -543,7 +543,7 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
             }
         """
         variables = {
-            "target": "NS-MAGE2-SANDBOX",
+            "targetSource": "NS-MAGE2-SANDBOX",
             "column": "applications",
             "metadata": {
                 "dest": "applications",
@@ -574,22 +574,22 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
-    @unittest.skip("demonstrating skipping")
+    # @unittest.skip("demonstrating skipping")
     def test_graphql_delete_product_metadata(self):
         query = """
             mutation deleteProductMetadata(
-                    $target: String!,
+                    $targetSource: String!,
                     $column: String!
                 ) {
                 deleteProductMetadata(
-                    target: $target,
+                    targetSource: $targetSource,
                     column: $column
                 ) {
                     status
                 }
             }
         """
-        variables = {"target": "NS-MAGE2-SANDBOX", "column": "applications"}
+        variables = {"targetSource": "NS-MAGE2-SANDBOX", "column": "applications"}
 
         payload = {"query": query, "variables": variables}
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
@@ -598,9 +598,9 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
     @unittest.skip("demonstrating skipping")
     def test_graphql_product_metadatas(self):
         query = """
-            query($target: String!) {
-                productMetadatas(target: $target) {
-                    target
+            query($targetSource: String!) {
+                productMetadatas(targetSource: $targetSource) {
+                    targetSource
                     column
                     metadata
                     createdAt
@@ -609,7 +609,7 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
             }
         """
         variables = {
-            "target": "NS-MAGE2-SANDBOX",
+            "targetSource": "NS-MAGE2-SANDBOX",
         }
 
         payload = {"query": query, "variables": variables}

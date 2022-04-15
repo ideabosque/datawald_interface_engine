@@ -385,7 +385,7 @@ def delete_sync_task_handler(info, **kwargs):
 
 
 def resolve_product_metadatas_handle(info, **kwargs):
-    results = ProductMetadataModel.query(kwargs.get("target"))
+    results = ProductMetadataModel.query(kwargs.get("target_source"))
     return [
         ProductMetadataType(
             **Utility.json_loads(
@@ -398,7 +398,7 @@ def resolve_product_metadatas_handle(info, **kwargs):
 
 def insert_product_metadata_handler(info, **kwargs):
     ProductMetadataModel(
-        kwargs.get("target"),
+        kwargs.get("target_source"),
         kwargs.get("column"),
         **Utility.json_loads(
             Utility.json_dumps(
@@ -413,7 +413,7 @@ def insert_product_metadata_handler(info, **kwargs):
     ).save()
 
     product_metadata_model = ProductMetadataModel.get(
-        kwargs.get("target"), kwargs.get("column")
+        kwargs.get("target_source"), kwargs.get("column")
     )
     return ProductMetadataType(
         **Utility.json_loads(
@@ -424,7 +424,7 @@ def insert_product_metadata_handler(info, **kwargs):
 
 def update_product_metadata_handler(info, **kwargs):
     product_metadata_model = ProductMetadataModel.get(
-        kwargs.get("target"), kwargs.get("column")
+        kwargs.get("target_source"), kwargs.get("column")
     )
     product_metadata_model.update(
         actions=[
@@ -445,7 +445,7 @@ def update_product_metadata_handler(info, **kwargs):
 
 
 def delete_product_metadata_handler(info, **kwargs):
-    ProductMetadataModel.get(kwargs.get("target"), kwargs.get("column")).delete()
+    ProductMetadataModel.get(kwargs.get("target_source"), kwargs.get("column")).delete()
     return True
 
 

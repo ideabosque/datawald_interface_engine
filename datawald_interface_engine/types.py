@@ -54,7 +54,7 @@ class TxStagingType(ObjectType):
 
 
 class ProductMetadataType(ObjectType):
-    target = String()
+    target_source = String()
     column = String()
     metadata = JSON()
     created_at = DateTime()

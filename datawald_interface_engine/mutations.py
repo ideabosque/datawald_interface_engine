@@ -157,7 +157,7 @@ class InsertProductMetadata(Mutation):
     product_metadata = Field(ProductMetadataType)
 
     class Arguments:
-        target = String(required=True)
+        target_source = String(required=True)
         column = String(required=True)
         metadata = JSON(required=True)
 
@@ -177,7 +177,7 @@ class UpdateProductMetadata(Mutation):
     product_metadata = Field(ProductMetadataType)
 
     class Arguments:
-        target = String(required=True)
+        target_source = String(required=True)
         column = String(required=True)
         metadata = JSON(required=True)
 
@@ -197,7 +197,7 @@ class DeleteProductMetadata(Mutation):
     status = Boolean()
 
     class Arguments:
-        target = String(required=True)
+        target_source = String(required=True)
         column = String(required=True)
 
     @staticmethod

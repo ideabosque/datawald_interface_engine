@@ -79,7 +79,7 @@ class Query(ObjectType):
 
     product_metadatas = List(
         ProductMetadataType,
-        target=String(required=True),
+        target_source=String(required=True),
     )
 
     data_feed_count = Field(

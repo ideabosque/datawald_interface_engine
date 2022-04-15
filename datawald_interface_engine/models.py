@@ -75,7 +75,7 @@ class ProductMetadataModel(BaseModel):
     class Meta(BaseModel.Meta):
         table_name = "dw-product_metadata"
 
-    target = UnicodeAttribute(hash_key=True)
+    target_source = UnicodeAttribute(hash_key=True)
     column = UnicodeAttribute(range_key=True)
     metadata = MapAttribute()
     created_at = UTCDateTimeAttribute()
