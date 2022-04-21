@@ -64,7 +64,7 @@ def handlers_init(logger, **setting):
     input_queue = sqs.get_queue_by_name(QueueName=setting.get("input_queue_name"))
     max_entities_in_message_body = int(setting.get("max_entities_in_message_body", 10))
     allow_total_messages = int(setting.get("allow_total_messages", 10))
-    deadline_hours = int(setting.get("deadline_hours", 96))
+    deadline_hours = int(setting.get("deadline_hours", 336))
     default_timezone = setting.get("default_timezone", "UTC")
     sync_task_notification = setting.get("sync_task_notification", {})
 
@@ -382,9 +382,11 @@ def update_sync_task_handler(info, **kwargs):
     )
 
     # Send out the notification if the sync_task is completed.
-    if sync_task_notification.get(sync_task_model.target) and sync_task_notification[
-        sync_task_model.target
-    ].get(tx_type):
+    if (
+        sync_task_notification.get(sync_task_model.target)
+        and sync_task_notification[sync_task_model.target].get(tx_type)
+        and sync_status != "Incompleted"
+    ):
         endpoint_id = sync_task_notification[sync_task_model.target][tx_type][
             "endpoint_id"
         ]
