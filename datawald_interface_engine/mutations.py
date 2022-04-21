@@ -94,6 +94,7 @@ class InsertSyncTask(Mutation):
     sync_task = Field(SyncTaskType)
 
     class Arguments:
+        id = String()
         tx_type = String(required=True)
         source = String(required=True)
         target = String(required=True)

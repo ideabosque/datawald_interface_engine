@@ -253,6 +253,7 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
     def test_graphql_insert_sync_task(self):
         query = """
             mutation insertSyncTask(
+                    $id: String,
                     $txType: String!,
                     $source: String!,
                     $target: String!,
@@ -262,6 +263,7 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
                     $funct: String!
                 ) {
                 insertSyncTask(
+                    id: $id,
                     txType: $txType,
                     source: $source,
                     target: $target,
@@ -411,14 +413,16 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
                 $source: String!, 
                 $endDateFrom: DateTime!, 
                 $endDateTo: DateTime, 
-                $syncStatuses: [String]
+                $syncStatuses: [String],
+                $id: String,
                 ) {
                 syncTasks(
                     txType: $txType, 
                     source: $source, 
                     endDateFrom: $endDateFrom, 
                     endDateTo: $endDateTo, 
-                    syncStatuses: $syncStatuses) {
+                    syncStatuses: $syncStatuses
+                    id: $id) {
                     txType
                     id
                     source

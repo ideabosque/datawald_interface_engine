@@ -75,6 +75,7 @@ class Query(ObjectType):
         end_date_from=DateTime(required=True),
         end_date_to=DateTime(),
         sync_statuses=List(String),
+        id=String(),
     )
 
     product_metadatas = List(

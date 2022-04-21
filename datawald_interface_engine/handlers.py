@@ -149,6 +149,7 @@ def resolve_sync_tasks_handler(info, **kwargs):
     end_date_from = kwargs.get("end_date_from")
     end_date_to = kwargs.get("end_date_to")
     sync_statuses = kwargs.get("sync_statuses")
+    id = kwargs.get("id")
 
     current = datetime.now(tz=timezone(default_timezone))
     deadline = end_date_from + timedelta(hours=deadline_hours)
@@ -165,6 +166,8 @@ def resolve_sync_tasks_handler(info, **kwargs):
     filters = ["SyncTaskModel.end_date.between(end_date_from, end_date_to)"]
     if sync_statuses:
         filters.append("SyncTaskModel.sync_status.is_in(*sync_statuses)")
+    if id:
+        filters.append("SyncTaskModel.id.startswith(id)")
 
     args = args + [eval(" & ".join(filters))]
     results = SyncTaskModel.tx_type_source_index.query(*args)
@@ -265,6 +268,8 @@ def delete_tx_staging_handler(info, **kwargs):
 
 def insert_sync_task_handler(info, **kwargs):
     id = str(uuid.uuid1().int >> 64)
+    if kwargs.get("id"):
+        id = kwargs.get("id")
     SyncTaskModel(
         kwargs.get("tx_type"),
         id,
