@@ -32,10 +32,11 @@ max_entities_in_message_body = None
 allow_total_messages = None
 deadline_hours = None
 default_timezone = None
+sync_task_notification = None
 
 
 def handlers_init(logger, **setting):
-    global sqs, aws_lambda, dynamodbconnector, default_cut_date, task_queue, input_queue, max_entities_in_message_body, allow_total_messages, deadline_hours, default_timezone
+    global sqs, aws_lambda, dynamodbconnector, default_cut_date, task_queue, input_queue, max_entities_in_message_body, allow_total_messages, deadline_hours, default_timezone, sync_task_notification
     if (
         setting.get("region_name")
         and setting.get("aws_access_key_id")
@@ -65,6 +66,7 @@ def handlers_init(logger, **setting):
     allow_total_messages = int(setting.get("allow_total_messages", 10))
     deadline_hours = int(setting.get("deadline_hours", 96))
     default_timezone = setting.get("default_timezone", "UTC")
+    sync_task_notification = setting.get("sync_task_notification", {})
 
 
 @retry(
@@ -361,6 +363,8 @@ def dispatch_sync_task(logger, tx_type, id, target, funct, entities):
 
 def update_sync_task_handler(info, **kwargs):
     entities = kwargs.get("entities")
+    tx_type = kwargs.get("tx_type")
+    id = kwargs.get("id")
 
     sync_status = "Completed"
     if len(list(filter(lambda x: x["tx_status"] == "F", entities))) > 0:
@@ -368,7 +372,7 @@ def update_sync_task_handler(info, **kwargs):
     if len(list(filter(lambda x: x["tx_status"] == "?", entities))) > 0:
         sync_status = "Incompleted"
 
-    sync_task_model = SyncTaskModel.get(kwargs.get("tx_type"), kwargs.get("id"))
+    sync_task_model = SyncTaskModel.get(tx_type, id)
     sync_task_model.update(
         actions=[
             SyncTaskModel.sync_status.set(sync_status),
@@ -376,6 +380,25 @@ def update_sync_task_handler(info, **kwargs):
             SyncTaskModel.entities.set(entities),
         ]
     )
+
+    # Send out the notification if the sync_task is completed.
+    if sync_task_notification.get(sync_task_model.target) and sync_task_notification[
+        sync_task_model.target
+    ].get(tx_type):
+        endpoint_id = sync_task_notification[sync_task_model.target][tx_type][
+            "endpoint_id"
+        ]
+        funct = sync_task_notification[sync_task_model.target][tx_type]["funct"]
+        task_queue.send_message(
+            MessageAttributes={
+                "endpoint_id": {"StringValue": endpoint_id, "DataType": "String"},
+                "funct": {"StringValue": funct, "DataType": "String"},
+            },
+            MessageBody=Utility.json_dumps(
+                {"params": {"sync_task": sync_task_model.__dict__["attribute_values"]}}
+            ),
+            MessageGroupId=f"{tx_type}-{id}",
+        )
 
     return SyncTaskType(
         **Utility.json_loads(
