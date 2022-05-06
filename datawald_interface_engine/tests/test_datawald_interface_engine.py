@@ -16,6 +16,7 @@ setting = {
     "task_queue_name": os.getenv("task_queue_name"),
     "input_queue_name": os.getenv("input_queue_name"),
     "max_entities_in_message_body": os.getenv("max_entities_in_message_body"),
+    "sync_task_notification": {"ss3": {"inventory": "import_inventory_email"}},
 }
 
 sys.path.insert(0, "/var/www/projects/datawald_interface_engine")
@@ -309,7 +310,7 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
-    @unittest.skip("demonstrating skipping")
+    # @unittest.skip("demonstrating skipping")
     def test_graphql_update_sync_task(self):
         query = """
             mutation updateSyncTask(
@@ -339,15 +340,16 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
             }
         """
         variables = {
-            "txType": "order",
-            "id": "13229596337889808876",
+            "txType": "inventory",
+            "id": "inventory_worksheet",
             "entities": [
                 {
-                    "source": "MAGE2SQS-SANDBOX",
-                    "tx_type_src_id": "order-2000051509",
+                    "created_at": "2022-05-03T18:03:26+0000",
+                    "source": "s3",
+                    "tx_note": "datawald -> ss3",
                     "tx_status": "S",
-                    "created_at": "2022-03-08T13:00:00",
-                    "updated_at": "2022-03-08T13:00:00",
+                    "tx_type_src_id": "inventory-rooster_123",
+                    "updated_at": "2022-05-03T18:03:34+0000",
                 }
             ],
         }
@@ -578,7 +580,7 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
-    # @unittest.skip("demonstrating skipping")
+    @unittest.skip("demonstrating skipping")
     def test_graphql_delete_product_metadata(self):
         query = """
             mutation deleteProductMetadata(

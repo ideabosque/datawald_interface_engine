@@ -387,10 +387,8 @@ def update_sync_task_handler(info, **kwargs):
         and sync_task_notification[sync_task_model.target].get(tx_type)
         and sync_status != "Incompleted"
     ):
-        endpoint_id = sync_task_notification[sync_task_model.target][tx_type][
-            "endpoint_id"
-        ]
-        funct = sync_task_notification[sync_task_model.target][tx_type]["funct"]
+        endpoint_id = sync_task_model.target
+        funct = sync_task_notification[sync_task_model.target][tx_type]
         task_queue.send_message(
             MessageAttributes={
                 "endpoint_id": {"StringValue": endpoint_id, "DataType": "String"},
