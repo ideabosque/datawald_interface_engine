@@ -341,7 +341,7 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
         """
         variables = {
             "txType": "inventory",
-            "id": "inventory_worksheet",
+            "id": "1652305684116",
             "entities": [
                 {
                     "created_at": "2022-05-03T18:03:26+0000",

@@ -395,7 +395,7 @@ def update_sync_task_handler(info, **kwargs):
                 "funct": {"StringValue": funct, "DataType": "String"},
             },
             MessageBody=Utility.json_dumps(
-                {"params": {"sync_task": sync_task_model.__dict__["attribute_values"]}}
+                {"params": sync_task_model.__dict__["attribute_values"]}
             ),
             MessageGroupId=f"{tx_type}-{id}",
         )
