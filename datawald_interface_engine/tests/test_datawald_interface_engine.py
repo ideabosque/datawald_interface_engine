@@ -341,15 +341,15 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
         """
         variables = {
             "txType": "inventory",
-            "id": "1652305684116",
+            "id": "1653017238675",
             "entities": [
                 {
-                    "created_at": "2022-05-03T18:03:26+0000",
+                    "created_at": "2022-05-20T03:27:24+0000",
                     "source": "s3",
                     "tx_note": "datawald -> ss3",
                     "tx_status": "S",
-                    "tx_type_src_id": "inventory-rooster_123",
-                    "updated_at": "2022-05-03T18:03:34+0000",
+                    "tx_type_src_id": "inventory-ASHWAGANDHARTPDRBOX55",
+                    "updated_at": "2022-05-20T03:27:42+0000",
                 }
             ],
         }
