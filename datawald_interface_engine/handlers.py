@@ -1,8 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 from __future__ import print_function
-from email import message
-from html import entities
 
 __author__ = "bibow"
 
