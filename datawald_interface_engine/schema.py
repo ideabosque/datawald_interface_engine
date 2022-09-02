@@ -60,6 +60,7 @@ class Query(ObjectType):
         CutDateType,
         tx_type=String(required=True),
         source=String(required=True),
+        target=String(required=True)
     )
 
     sync_task = Field(

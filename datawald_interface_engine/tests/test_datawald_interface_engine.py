@@ -310,7 +310,7 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
-    # @unittest.skip("demonstrating skipping")
+    @unittest.skip("demonstrating skipping")
     def test_graphql_update_sync_task(self):
         query = """
             mutation updateSyncTask(
@@ -451,19 +451,20 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
-    @unittest.skip("demonstrating skipping")
+    # @unittest.skip("demonstrating skipping")
     def test_graphql_cut_date(self):
         query = """
-            query($txType: String!, $source: String!) {
-                cutDate(txType: $txType, source: $source) {
+            query($txType: String!, $source: String!, $target: String!) {
+                cutDate(txType: $txType, source: $source, target: $target) {
                     cutDate
                     offset
                 }
             }
         """
         variables = {
-            "txType": "order",
-            "source": "MAGE2SQS-SANDBOX",
+            "txType": "opportunity",
+            "source": "ns",
+            "target": "hubspot",
         }
 
         payload = {"query": query, "variables": variables}

@@ -31,10 +31,11 @@ allow_total_messages = None
 deadline_hours = None
 default_timezone = None
 sync_task_notification = None
+sync_statuses = None
 
 
 def handlers_init(logger, **setting):
-    global sqs, aws_lambda, dynamodbconnector, default_cut_date, task_queue, input_queue, max_entities_in_message_body, allow_total_messages, deadline_hours, default_timezone, sync_task_notification
+    global sqs, aws_lambda, dynamodbconnector, default_cut_date, task_queue, input_queue, max_entities_in_message_body, allow_total_messages, deadline_hours, default_timezone, sync_task_notification, sync_statuses
     if (
         setting.get("region_name")
         and setting.get("aws_access_key_id")
@@ -65,6 +66,9 @@ def handlers_init(logger, **setting):
     deadline_hours = int(setting.get("deadline_hours", 336))
     default_timezone = setting.get("default_timezone", "UTC")
     sync_task_notification = setting.get("sync_task_notification", {})
+    sync_statuses = setting.get(
+        "sync_statuses", ["Completed", "Fail", "Incompleted", "Processing"]
+    )
 
 
 @retry(
@@ -100,13 +104,13 @@ def resolve_tx_staging_handler(info, **kwargs):
 def resolve_cut_date_handler(info, **kwargs):
     cut_date = datetime.strptime(default_cut_date, "%Y-%m-%dT%H:%M:%S%z")
     offset = 0
-    sync_statuses = ["Completed", "Fail", "Incompleted", "Processing"]
     sync_tasks = [
         sync_task
         for sync_task in SyncTaskModel.tx_type_source_index.query(
             kwargs.get("tx_type"),
             SyncTaskModel.source == kwargs.get("source"),
-            SyncTaskModel.sync_status.is_in(*sync_statuses),
+            (SyncTaskModel.target == kwargs.get("target"))
+            & (SyncTaskModel.sync_status.is_in(*sync_statuses)),
         )
     ]
 
@@ -253,7 +257,7 @@ def update_tx_staging_status_handler(info, **kwargs):
     TxStagingModel.get(kwargs.get("source"), kwargs.get("tx_type_src_id")).update(
         actions=[
             TxStagingModel.tgt_id.set(kwargs.get("tgt_id")),
-            TxStagingModel.updated_at.set(datetime.utcnow()),
+            TxStagingModel.updated_at.set(datetime.now(tz=timezone("UTC"))),
             TxStagingModel.tx_note.set(kwargs.get("tx_note")),
             TxStagingModel.tx_status.set(kwargs.get("tx_status")),
         ]
@@ -277,8 +281,8 @@ def insert_sync_task_handler(info, **kwargs):
             "source": kwargs.get("source"),
             "target": kwargs.get("target"),
             "cut_date": kwargs.get("cut_date"),
-            "start_date": datetime.utcnow(),
-            "end_date": datetime.utcnow(),
+            "start_date": datetime.now(tz=timezone("UTC")),
+            "end_date": datetime.now(tz=timezone("UTC")),
             "offset": kwargs.get("offset", 0),
             "sync_note": f"Process {kwargs.get('tx_type')} data for source ({kwargs.get('source')}).",
             "sync_status": "Processing",
@@ -374,7 +378,7 @@ def update_sync_task_handler(info, **kwargs):
     sync_task_model.update(
         actions=[
             SyncTaskModel.sync_status.set(sync_status),
-            SyncTaskModel.end_date.set(datetime.utcnow()),
+            SyncTaskModel.end_date.set(datetime.now(tz=timezone("UTC"))),
             SyncTaskModel.entities.set(entities),
         ]
     )
@@ -430,8 +434,8 @@ def insert_product_metadata_handler(info, **kwargs):
             Utility.json_dumps(
                 {
                     "metadata": kwargs.get("metadata"),
-                    "created_at": datetime.utcnow(),
-                    "updated_at": datetime.utcnow(),
+                    "created_at": datetime.now(tz=timezone("UTC")),
+                    "updated_at": datetime.now(tz=timezone("UTC")),
                 }
             ),
             parser_number=False,
@@ -459,7 +463,7 @@ def update_product_metadata_handler(info, **kwargs):
                     Utility.json_dumps(kwargs.get("metadata")), parser_number=False
                 )
             ),
-            ProductMetadataModel.updated_at.set(datetime.utcnow()),
+            ProductMetadataModel.updated_at.set(datetime.now(tz=timezone("UTC"))),
         ]
     )
 
