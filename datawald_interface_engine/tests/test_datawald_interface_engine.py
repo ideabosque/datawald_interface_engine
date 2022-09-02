@@ -168,6 +168,7 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
             mutation updateTxStaging(
                     $source: String!,
                     $txTypeSrcId: String!,
+                    $target: String!,
                     $tgtId: String!,
                     $txStatus: String!,
                     $txNote: String!,
@@ -177,6 +178,7 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
                 updateTxStaging(
                     source: $source,
                     txTypeSrcId: $txTypeSrcId,
+                    target: $target,
                     tgtId: $tgtId,
                     txStatus: $txStatus,
                     txNote: $txNote,
@@ -189,6 +191,7 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
         variables = {
             "source": "MAGE2SQS-SANDBOX",
             "txTypeSrcId": "order-2000051509",
+            "target": "NS-MAGE2-SANDBOX",
             "tgtId": "xxxx1",
             "txStatus": "S",
             "txNote": "DataWald -> NS-MAGE2",
@@ -204,11 +207,13 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
         query = """
             mutation deleteTxStaging(
                     $source: String!,
-                    $txTypeSrcId: String!
+                    $txTypeSrcId: String!,
+                    $target: String!
                 ) {
                 deleteTxStaging(
                     source: $source,
-                    txTypeSrcId: $txTypeSrcId
+                    txTypeSrcId: $txTypeSrcId,
+                    target: $target
                 ) {
                     status
                 }
@@ -217,6 +222,7 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
         variables = {
             "source": "MAGE2SQS-SANDBOX",
             "txTypeSrcId": "order-2000051509",
+            "target": "NS-MAGE2-SANDBOX",
         }
 
         payload = {"query": query, "variables": variables}
@@ -226,8 +232,8 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
     @unittest.skip("demonstrating skipping")
     def test_graphql_tx_staging(self):
         query = """
-            query($source: String!, $txTypeSrcId: String!) {
-                txStaging(source: $source, txTypeSrcId: $txTypeSrcId) {
+            query($source: String!, $txTypeSrcId: String!, $target: String!) {
+                txStaging(source: $source, txTypeSrcId: $txTypeSrcId, target: $target) {
                     source
                     txTypeSrcId
                     target
@@ -244,13 +250,14 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
         variables = {
             "source": "MAGE2SQS-SANDBOX",
             "txTypeSrcId": "order-2000051509",
+            "target": "NS-MAGE2-SANDBOX",
         }
 
         payload = {"query": query, "variables": variables}
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
-    @unittest.skip("demonstrating skipping")
+    # @unittest.skip("demonstrating skipping")
     def test_graphql_insert_sync_task(self):
         query = """
             mutation insertSyncTask(
@@ -299,6 +306,7 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
                 {
                     "source": "MAGE2SQS-SANDBOX",
                     "tx_type_src_id": "order-2000051509",
+                    "target": "NS-MAGE2-SANDBOX",
                     "created_at": "2022-03-08T13:00:00",
                     "updated_at": "2022-03-08T13:00:00",
                 }
@@ -451,7 +459,7 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
-    # @unittest.skip("demonstrating skipping")
+    @unittest.skip("demonstrating skipping")
     def test_graphql_cut_date(self):
         query = """
             query($txType: String!, $source: String!, $target: String!) {

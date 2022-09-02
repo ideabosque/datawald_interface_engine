@@ -59,9 +59,8 @@ class TxStagingModel(BaseModel):
     class Meta(BaseModel.Meta):
         table_name = "dw-tx_staging"
 
-    source = UnicodeAttribute(hash_key=True)
+    source_target = UnicodeAttribute(hash_key=True)
     tx_type_src_id = UnicodeAttribute(range_key=True)
-    target = UnicodeAttribute()
     tgt_id = UnicodeAttribute(null=True)
     data = MapAttribute()
     old_data = MapAttribute()

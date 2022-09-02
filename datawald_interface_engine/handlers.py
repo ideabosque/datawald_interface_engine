@@ -76,8 +76,18 @@ def handlers_init(logger, **setting):
     wait=wait_exponential(multiplier=1, max=60),
     stop=stop_after_attempt(5),
 )
-def get_tx_staging(source, tx_type_src_id):
-    return TxStagingModel.get(source, tx_type_src_id)
+def get_tx_staging(source_target, tx_type_src_id):
+    tx_staging = TxStagingModel.get(source_target, tx_type_src_id).__dict__[
+        "attribute_values"
+    ]
+    source_target = tx_staging.pop("source_target")
+    return dict(
+        {
+            "source": source_target.split("_")[0],
+            "target": source_target.split("_")[1],
+        },
+        **tx_staging,
+    )
 
 
 @retry(
@@ -94,8 +104,9 @@ def resolve_tx_staging_handler(info, **kwargs):
         **Utility.json_loads(
             Utility.json_dumps(
                 get_tx_staging(
-                    kwargs.get("source"), kwargs.get("tx_type_src_id")
-                ).__dict__["attribute_values"]
+                    f"{kwargs.get('source')}_{kwargs.get('target')}",
+                    kwargs.get("tx_type_src_id"),
+                )
             )
         )
     )
@@ -193,13 +204,14 @@ def insert_tx_staging_handler(info, **kwargs):
     tx_status = kwargs.get("tx_status")
     created_at = kwargs.get("created_at")
     count = TxStagingModel.count(
-        kwargs.get("source"),
+        f"{kwargs.get('source')}_{kwargs.get('target')}",
         TxStagingModel.tx_type_src_id == kwargs.get("tx_type_src_id"),
     )
 
     if tx_status == "N" and count >= 1:
         tx_staging_model = TxStagingModel.get(
-            kwargs.get("source"), kwargs.get("tx_type_src_id")
+            f"{kwargs.get('source')}_{kwargs.get('target')}",
+            kwargs.get("tx_type_src_id"),
         )
         created_at = tx_staging_model.created_at
         data_diff = DeepDiff(
@@ -215,7 +227,7 @@ def insert_tx_staging_handler(info, **kwargs):
                     actions=[
                         TxStagingModel.updated_at.set(kwargs.get("updated_at")),
                         TxStagingModel.tx_note.set(
-                            f"No update {kwargs.get('source')}/{kwargs.get('tx_type_src_id')}"
+                            f"No update {kwargs.get('source')}_{kwargs.get('target')}/{kwargs.get('tx_type_src_id')}"
                         ),
                         TxStagingModel.tx_status.set(tx_status),
                     ]
@@ -225,12 +237,11 @@ def insert_tx_staging_handler(info, **kwargs):
 
     if tx_status != "I":
         TxStagingModel(
-            kwargs.get("source"),
+            f"{kwargs.get('source')}_{kwargs.get('target')}",
             kwargs.get("tx_type_src_id"),
             **Utility.json_loads(
                 Utility.json_dumps(
                     {
-                        "target": kwargs.get("target"),
                         "data": kwargs.get("data"),
                         "old_data": old_data,
                         "created_at": created_at,
@@ -243,18 +254,22 @@ def insert_tx_staging_handler(info, **kwargs):
             ),
         ).save()
 
-    tx_staging_model = get_tx_staging(
-        kwargs.get("source"), kwargs.get("tx_type_src_id")
-    )
     return TxStagingType(
         **Utility.json_loads(
-            Utility.json_dumps(tx_staging_model.__dict__["attribute_values"])
+            Utility.json_dumps(
+                get_tx_staging(
+                    f"{kwargs.get('source')}_{kwargs.get('target')}",
+                    kwargs.get("tx_type_src_id"),
+                )
+            )
         )
     )
 
 
 def update_tx_staging_status_handler(info, **kwargs):
-    TxStagingModel.get(kwargs.get("source"), kwargs.get("tx_type_src_id")).update(
+    TxStagingModel.get(
+        f"{kwargs.get('source')}_{kwargs.get('target')}", kwargs.get("tx_type_src_id")
+    ).update(
         actions=[
             TxStagingModel.tgt_id.set(kwargs.get("tgt_id")),
             TxStagingModel.updated_at.set(datetime.now(tz=timezone("UTC"))),
@@ -266,7 +281,9 @@ def update_tx_staging_status_handler(info, **kwargs):
 
 
 def delete_tx_staging_handler(info, **kwargs):
-    TxStagingModel.get(kwargs.get("source"), kwargs.get("tx_type_src_id")).delete()
+    TxStagingModel.get(
+        f"{kwargs.get('source')}_{kwargs.get('target')}", kwargs.get("tx_type_src_id")
+    ).delete()
     return True
 
 
@@ -319,6 +336,7 @@ def dispatch_sync_task(logger, tx_type, id, target, funct, entities):
                     {
                         "source": entity["source"],
                         "tx_type_src_id": entity["tx_type_src_id"],
+                        "target": entity["target"],
                         "created_at": entity["created_at"],
                         "updated_at": entity["updated_at"],
                     }

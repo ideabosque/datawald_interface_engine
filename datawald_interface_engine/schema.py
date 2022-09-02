@@ -54,13 +54,14 @@ class Query(ObjectType):
         required=True,
         source=String(required=True),
         tx_type_src_id=String(required=True),
+        target=String(required=True),
     )
 
     cut_date = Field(
         CutDateType,
         tx_type=String(required=True),
         source=String(required=True),
-        target=String(required=True)
+        target=String(required=True),
     )
 
     sync_task = Field(

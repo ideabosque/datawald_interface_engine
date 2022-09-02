@@ -54,6 +54,7 @@ class UpdateTxStaging(Mutation):
     class Arguments:
         source = String(required=True)
         tx_type_src_id = String(required=True)
+        target = String(required=True)
         tgt_id = String(required=True)
         tx_note = String(required=True)
         tx_status = String(required=True)
@@ -77,6 +78,7 @@ class DeleteTxStaging(Mutation):
     class Arguments:
         source = String(required=True)
         tx_type_src_id = String(required=True)
+        target = String(required=True)
 
     @staticmethod
     def mutate(root, info, **kwargs):
