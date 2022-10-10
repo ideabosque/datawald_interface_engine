@@ -145,7 +145,7 @@ def flush_sync_task(tx_type, source, target, id):
     for sync_task in SyncTaskModel.tx_type_source_index.query(
         tx_type,
         SyncTaskModel.source == source,
-        (SyncTaskModel.target == target & SyncTaskModel.id != id),
+        (SyncTaskModel.target == target) & (SyncTaskModel.id != id),
     ):
         sync_task.delete(SyncTaskModel.id != id)
 

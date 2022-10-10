@@ -257,7 +257,7 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
-    # @unittest.skip("demonstrating skipping")
+    @unittest.skip("demonstrating skipping")
     def test_graphql_insert_sync_task(self):
         query = """
             mutation insertSyncTask(
@@ -459,7 +459,7 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
-    @unittest.skip("demonstrating skipping")
+    # @unittest.skip("demonstrating skipping")
     def test_graphql_cut_date(self):
         query = """
             query($txType: String!, $source: String!, $target: String!) {
