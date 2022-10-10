@@ -135,13 +135,17 @@ def resolve_cut_date_handler(info, **kwargs):
         offset = int(last_sync_task.offset)
 
         # Flsuh Sync Task Table by souce and tx_type.
-        flush_sync_task(kwargs.get("tx_type"), kwargs.get("source"), id)
+        flush_sync_task(
+            kwargs.get("tx_type"), kwargs.get("source"), kwargs.get("target"), id
+        )
     return CutDateType(cut_date=cut_date, offset=offset)
 
 
-def flush_sync_task(tx_type, source, id):
+def flush_sync_task(tx_type, source, target, id):
     for sync_task in SyncTaskModel.tx_type_source_index.query(
-        tx_type, SyncTaskModel.source == source, SyncTaskModel.id != id
+        tx_type,
+        SyncTaskModel.source == source,
+        (SyncTaskModel.target == target & SyncTaskModel.id != id),
     ):
         sync_task.delete(SyncTaskModel.id != id)
 
