@@ -229,7 +229,7 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
-    @unittest.skip("demonstrating skipping")
+    # @unittest.skip("demonstrating skipping")
     def test_graphql_tx_staging(self):
         query = """
             query($source: String!, $txTypeSrcId: String!, $target: String!) {
@@ -248,9 +248,9 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
             }
         """
         variables = {
-            "source": "MAGE2SQS-SANDBOX",
-            "txTypeSrcId": "order-2000051509",
-            "target": "NS-MAGE2-SANDBOX",
+            "source": "sqs",
+            "txTypeSrcId": "order-201",
+            "target": "ns",
         }
 
         payload = {"query": query, "variables": variables}
@@ -459,7 +459,7 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
-    # @unittest.skip("demonstrating skipping")
+    @unittest.skip("demonstrating skipping")
     def test_graphql_cut_date(self):
         query = """
             query($txType: String!, $source: String!, $target: String!) {
