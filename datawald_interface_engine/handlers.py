@@ -4,7 +4,7 @@ from __future__ import print_function
 
 __author__ = "bibow"
 
-import uuid, boto3, traceback, copy
+import uuid, boto3, traceback, copy, time, math
 from datetime import datetime, timedelta
 from deepdiff import DeepDiff
 from silvaengine_utility import Utility
@@ -15,6 +15,8 @@ from .types import (
     TxStagingType,
     ProductMetadataType,
     DataFeedEntityType,
+    SyncTaskListType,
+    TxStagingsType,
 )
 from tenacity import retry, wait_exponential, stop_after_attempt
 from pytz import timezone
@@ -71,6 +73,58 @@ def handlers_init(logger, **setting):
     )
 
 
+def results_pagination(
+    info,
+    query_scan,
+    total,
+    limit,
+    page_number,
+    args,
+    attributes_to_get,
+    scan_index_forward,
+):
+    last_evaluated_key = None
+
+    info.context.get("logger").info(f"Locate page started at {time.strftime('%X')}")
+    if page_number > 1 and page_number <= math.ceil(total / limit):
+        kwargs = {"attributes_to_get": attributes_to_get}
+        if scan_index_forward is not None:
+            kwargs.update({"scan_index_forward": scan_index_forward})
+        results = query_scan(
+            *args,
+            **kwargs,
+        )
+        entities = []
+        for i, entity in enumerate(results):
+            entities.append(entity)
+            if i + 1 == (page_number - 1) * limit:
+                break
+
+        last_evaluated_key = results.last_evaluated_key
+
+    info.context.get("logger").info(f"Locate page finished at {time.strftime('%X')}")
+
+    if page_number <= math.ceil(total / limit):
+        kwargs = {"last_evaluated_key": last_evaluated_key}
+        if scan_index_forward is not None:
+            kwargs.update({"scan_index_forward": scan_index_forward})
+        results = query_scan(
+            *args,
+            **kwargs,
+        )
+    else:
+        return []
+
+    entities = []
+    for i, entity in enumerate(results):
+        entities.append(entity)
+        if i + 1 == limit:
+            break
+
+    info.context.get("logger").info(f"Load page at {time.strftime('%X')}")
+    return entities
+
+
 @retry(
     reraise=True,
     wait=wait_exponential(multiplier=1, max=60),
@@ -109,6 +163,77 @@ def resolve_tx_staging_handler(info, **kwargs):
                 )
             )
         )
+    )
+
+
+def get_tx_stagings(
+    info,
+    query_scan_string,
+    total,
+    limit,
+    page_number,
+    args,
+    attributes_to_get,
+    scan_index_forward=None,
+):
+    entities = results_pagination(
+        info,
+        query_scan_string,
+        total,
+        limit,
+        page_number,
+        args,
+        attributes_to_get,
+        scan_index_forward,
+    )
+    return TxStagingsType(
+        tx_stagings=[
+            TxStagingType(
+                source=tx_staging.source_target.split("_")[0],
+                tx_type_src_id=tx_staging.tx_type_src_id,
+                target=tx_staging.source_target.split("_")[1],
+                tgt_id=tx_staging.tgt_id,
+                data=tx_staging.data.__dict__["attribute_values"],
+                old_data=tx_staging.old_data.__dict__["attribute_values"],
+                created_at=tx_staging.created_at,
+                updated_at=tx_staging.updated_at,
+                tx_note=tx_staging.tx_note,
+                tx_status=tx_staging.tx_status,
+            )
+            for tx_staging in entities
+        ],
+        page_size=limit,
+        page_number=page_number,
+        total=total,
+    )
+
+
+def resolve_tx_stagings_handler(info, **kwargs):
+    page_number = kwargs.get("page_number", 1)
+    limit = kwargs.get("limit", 100)
+    source = kwargs.get("source")
+    target = kwargs.get("target")
+
+    args = [f"{source}_{target}"]
+    if kwargs.get("tx_type"):
+        args.append(TxStagingModel.tx_type_src_id.startswith(kwargs.get("tx_type")))
+
+    the_filters = []  # We can add filters for the query.
+    if len(the_filters) > 0:
+        args.append(eval(" & ".join(the_filters)))
+
+    total = TxStagingModel.count(*args)
+    info.context.get("logger").info(
+        f"Retrieve total ({total}) at {time.strftime('%X')}"
+    )
+    return get_tx_stagings(
+        info,
+        TxStagingModel.query,
+        total,
+        limit,
+        page_number,
+        args,
+        ["source_target", "tx_type_src_id"],
     )
 
 
@@ -159,6 +284,62 @@ def resolve_sync_task_handler(info, **kwargs):
                 ]
             )
         )
+    )
+
+
+def get_sync_task_list(
+    info,
+    query_scan_string,
+    total,
+    limit,
+    page_number,
+    args,
+    attributes_to_get,
+    scan_index_forward=None,
+):
+    entities = results_pagination(
+        info,
+        query_scan_string,
+        total,
+        limit,
+        page_number,
+        args,
+        attributes_to_get,
+        scan_index_forward,
+    )
+    return SyncTaskListType(
+        sync_task_list=[
+            SyncTaskType(**sync_task.__dict__["attribute_values"])
+            for sync_task in entities
+        ],
+        page_size=limit,
+        page_number=page_number,
+        total=total,
+    )
+
+
+def resolve_sync_task_list_handler(info, **kwargs):
+    page_number = kwargs.get("page_number", 1)
+    limit = kwargs.get("limit", 100)
+
+    args = [kwargs.get("tx_type"), SyncTaskModel.source == kwargs.get("source")]
+
+    the_filters = []  # We can add filters for the query.
+    if len(the_filters) > 0:
+        args.append(eval(" & ".join(the_filters)))
+
+    total = SyncTaskModel.count(*args)
+    info.context.get("logger").info(
+        f"Retrieve total ({total}) at {time.strftime('%X')}"
+    )
+    return get_sync_task_list(
+        info,
+        SyncTaskModel.tx_type_source_index.query,
+        total,
+        limit,
+        page_number,
+        args,
+        ["tx_type", "source"],
     )
 
 

@@ -229,7 +229,7 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
-    # @unittest.skip("demonstrating skipping")
+    @unittest.skip("demonstrating skipping")
     def test_graphql_tx_staging(self):
         query = """
             query($source: String!, $txTypeSrcId: String!, $target: String!) {
@@ -251,6 +251,39 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
             "source": "sqs",
             "txTypeSrcId": "order-201",
             "target": "ns",
+        }
+
+        payload = {"query": query, "variables": variables}
+        response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
+        logger.info(response)
+
+    @unittest.skip("demonstrating skipping")
+    def test_graphql_tx_stagings(self):
+        query = """
+            query($pageNumber: Int, $limit: Int, $source: String!, $target: String!, $txType: String) {
+                txStagings(pageNumber: $pageNumber, limit: $limit, source: $source, target: $target, txType: $txType) {
+                    txStagings{
+                        source
+                        txTypeSrcId
+                        target
+                        tgtId
+                        data
+                        oldData
+                        createdAt
+                        updatedAt
+                        txNote
+                        txStatus
+                    }
+                    pageSize
+                    pageNumber
+                    total
+                }
+            }
+        """
+        variables = {
+            "source": "sqs",
+            "target": "ns",
+            "txType": "order",
         }
 
         payload = {"query": query, "variables": variables}
@@ -458,6 +491,51 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
         payload = {"query": query, "variables": variables}
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
+
+
+    # @unittest.skip("demonstrating skipping")
+    def test_graphql_sync_task_list(self):
+        query = """
+            query(
+                $txType: String!, 
+                $source: String!, 
+                $pageNumber: Int, 
+                $limit: Int
+                ) {
+                syncTaskList(
+                    txType: $txType, 
+                    source: $source,
+                    pageNumber: $pageNumber, 
+                    limit: $limit
+                   ) {
+                    syncTaskList{
+                        txType
+                        id
+                        source
+                        target
+                        cutDate
+                        startDate
+                        endDate
+                        offset
+                        syncNote
+                        syncStatus
+                        entities
+                    }
+                    pageSize
+                    pageNumber
+                    total
+                }
+            }
+        """
+        variables = {
+            "txType": "order",
+            "source": "ns",
+        }
+
+        payload = {"query": query, "variables": variables}
+        response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
+        logger.info(response)
+
 
     @unittest.skip("demonstrating skipping")
     def test_graphql_cut_date(self):

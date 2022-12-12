@@ -9,7 +9,9 @@ from graphene import ObjectType, String, List, Field, Int, DateTime
 from .types import (
     CutDateType,
     SyncTaskType,
+    SyncTaskListType,
     TxStagingType,
+    TxStagingsType,
     ProductMetadataType,
     DataFeedEntityType,
 )
@@ -28,9 +30,11 @@ from .mutations import (
 )
 from .queries import (
     resolve_tx_staging,
+    resolve_tx_stagings,
     resolve_cut_date,
     resolve_sync_task,
     resolve_sync_tasks,
+    resolve_sync_task_list,
     resolve_product_metadatas,
     resolve_data_feed_count,
     resolve_data_feed_entities,
@@ -41,7 +45,9 @@ def type_class():
     return [
         CutDateType,
         SyncTaskType,
+        SyncTaskListType,
         TxStagingType,
+        TxStagingsType,
         ProductMetadataType,
         DataFeedEntityType,
     ]
@@ -55,6 +61,15 @@ class Query(ObjectType):
         source=String(required=True),
         tx_type_src_id=String(required=True),
         target=String(required=True),
+    )
+
+    tx_stagings = Field(
+        TxStagingsType,
+        page_number=Int(),
+        limit=Int(),
+        source=String(required=True),
+        target=String(required=True),
+        tx_type=String(),
     )
 
     cut_date = Field(
@@ -78,6 +93,14 @@ class Query(ObjectType):
         end_date_to=DateTime(),
         sync_statuses=List(String),
         id=String(),
+    )
+
+    sync_task_list = Field(
+        SyncTaskListType,
+        page_number=Int(),
+        limit=Int(),
+        tx_type=String(required=True),
+        source=String(required=True),
     )
 
     product_metadatas = List(
@@ -111,6 +134,9 @@ class Query(ObjectType):
     def resolve_tx_staging(self, info, **kwargs):
         return resolve_tx_staging(info, **kwargs)
 
+    def resolve_tx_stagings(self, info, **kwargs):
+        return resolve_tx_stagings(info, **kwargs)
+
     def resolve_cut_date(self, info, **kwargs):
         return resolve_cut_date(info, **kwargs)
 
@@ -119,6 +145,9 @@ class Query(ObjectType):
 
     def resolve_sync_tasks(self, info, **kwargs):
         return resolve_sync_tasks(info, **kwargs)
+
+    def resolve_sync_task_list(self, info, **kwargs):
+        return resolve_sync_task_list(info, **kwargs)
 
     def resolve_product_metadatas(self, info, **kwargs):
         return resolve_product_metadatas(info, **kwargs)

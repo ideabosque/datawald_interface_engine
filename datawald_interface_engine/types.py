@@ -69,3 +69,17 @@ class DataFeedEntityType(ObjectType):
     data = JSON()
     created_at = DateTime()
     updated_at = DateTime()
+
+
+class ListObjectType(ObjectType):
+    page_size = Int()
+    page_number = Int()
+    total = Int()
+
+
+class TxStagingsType(ListObjectType):
+    tx_stagings = List(TxStagingType)
+
+
+class SyncTaskListType(ListObjectType):
+    sync_task_list = List(SyncTaskType)
