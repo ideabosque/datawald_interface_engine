@@ -537,7 +537,7 @@ def dispatch_sync_task(logger, tx_type, id, target, funct, entities):
                         "funct": {"StringValue": funct, "DataType": "String"},
                     },
                     MessageBody=Utility.json_dumps(message_body),
-                    # MessageGroupId=f"{tx_type}-{id}",
+                    MessageGroupId=f"{tx_type}-{id}",
                 )
                 message_body["params"]["entities"] = []
 
@@ -556,7 +556,7 @@ def dispatch_sync_task(logger, tx_type, id, target, funct, entities):
                         },
                     },
                     MessageBody=Utility.json_dumps(message_body),
-                    # MessageGroupId=f"{tx_type}-{id}",
+                    MessageGroupId=f"{tx_type}-{id}",
                 )
                 break
 
