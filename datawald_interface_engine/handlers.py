@@ -69,7 +69,8 @@ def handlers_init(logger, **setting):
     default_timezone = setting.get("default_timezone", "UTC")
     sync_task_notification = setting.get("sync_task_notification", {})
     sync_statuses = setting.get(
-        "sync_statuses", ["Completed", "Fail", "Incompleted", "Processing"]
+        # "sync_statuses", ["Completed", "Fail", "Incompleted", "Processing"]
+        "sync_statuses", ["Completed"]
     )
 
 
@@ -272,7 +273,8 @@ def flush_sync_task(tx_type, source, target, id):
         SyncTaskModel.source == source,
         (SyncTaskModel.target == target) & (SyncTaskModel.id != id),
     ):
-        sync_task.delete(SyncTaskModel.id != id)
+        if sync_task.sync_status in sync_statuses:
+            sync_task.delete(SyncTaskModel.id != id)
 
 
 def resolve_sync_task_handler(info, **kwargs):

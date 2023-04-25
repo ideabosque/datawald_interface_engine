@@ -493,7 +493,7 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
         logger.info(response)
 
 
-    # @unittest.skip("demonstrating skipping")
+    @unittest.skip("demonstrating skipping")
     def test_graphql_sync_task_list(self):
         query = """
             query(
@@ -537,7 +537,7 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
         logger.info(response)
 
 
-    @unittest.skip("demonstrating skipping")
+    # @unittest.skip("demonstrating skipping")
     def test_graphql_cut_date(self):
         query = """
             query($txType: String!, $source: String!, $target: String!) {
@@ -548,9 +548,9 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
             }
         """
         variables = {
-            "txType": "opportunity",
+            "txType": "product",
             "source": "ns",
-            "target": "hubspot",
+            "target": "mage2",
         }
 
         payload = {"query": query, "variables": variables}
