@@ -6,6 +6,7 @@ __author__ = "bibow"
 
 import logging, sys, unittest, os
 from dotenv import load_dotenv
+from pathlib import Path
 
 load_dotenv()
 setting = {
@@ -19,6 +20,9 @@ setting = {
     "sync_task_notification": {"ss3": {"inventory": "import_inventory_email"}},
 }
 
+document = Path(
+    os.path.join(os.path.dirname(__file__), "datawald_interface_engine.graphql")
+).read_text()
 sys.path.insert(0, "/var/www/projects/datawald_interface_engine")
 sys.path.insert(1, "/var/www/projects/dynamodb_connector")
 
@@ -38,56 +42,16 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
 
     @unittest.skip("demonstrating skipping")
     def test_graphql_ping(self):
-        query = """
-            query {
-                ping
-            }
-        """
-        variables = {}
-
-        payload = {"query": query, "variables": variables}
+        payload = {
+            "query": document,
+            "variables": {},
+            "operation_name": "ping",
+        }
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
     @unittest.skip("demonstrating skipping")
     def test_graphql_insert_tx_staging(self):
-        query = """
-            mutation insertTxStaging(
-                    $source: String!,
-                    $txTypeSrcId: String!,
-                    $target: String!,
-                    $data: JSON!,
-                    $txStatus: String!,
-                    $txNote: String!,
-                    $createdAt: DateTime!,
-                    $updatedAt: DateTime!
-
-                ) {
-                insertTxStaging(
-                    source: $source,
-                    txTypeSrcId: $txTypeSrcId,
-                    target: $target,
-                    data: $data,
-                    txStatus: $txStatus,
-                    txNote: $txNote,
-                    createdAt: $createdAt,
-                    updatedAt: $updatedAt
-                ) {
-                    txStaging{
-                        source
-                        txTypeSrcId
-                        target
-                        tgtId
-                        data
-                        oldData
-                        createdAt
-                        updatedAt
-                        txNote
-                        txStatus
-                    }
-                }
-            }
-        """
         variables = {
             "source": "MAGE2SQS-SANDBOX",
             "txTypeSrcId": "order-2000051509",
@@ -157,37 +121,16 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
             "createdAt": "2022-03-08T13:00:00",
             "updatedAt": "2022-03-08T13:00:00",
         }
-
-        payload = {"query": query, "variables": variables}
+        payload = {
+            "query": document,
+            "variables": variables,
+            "operation_name": "insertTxStaging",
+        }
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
     @unittest.skip("demonstrating skipping")
     def test_graphql_update_tx_staging(self):
-        query = """
-            mutation updateTxStaging(
-                    $source: String!,
-                    $txTypeSrcId: String!,
-                    $target: String!,
-                    $tgtId: String!,
-                    $txStatus: String!,
-                    $txNote: String!,
-                    $updatedAt: DateTime!
-
-                ) {
-                updateTxStaging(
-                    source: $source,
-                    txTypeSrcId: $txTypeSrcId,
-                    target: $target,
-                    tgtId: $tgtId,
-                    txStatus: $txStatus,
-                    txNote: $txNote,
-                    updatedAt: $updatedAt
-                ) {
-                    status
-                }
-            }
-        """
         variables = {
             "source": "MAGE2SQS-SANDBOX",
             "txTypeSrcId": "order-2000051509",
@@ -197,138 +140,61 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
             "txNote": "DataWald -> NS-MAGE2",
             "updatedAt": "2022-03-08T13:00:00",
         }
-
-        payload = {"query": query, "variables": variables}
+        payload = {
+            "query": document,
+            "variables": variables,
+            "operation_name": "updateTxStaging",
+        }
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
     @unittest.skip("demonstrating skipping")
     def test_graphql_delete_tx_staging(self):
-        query = """
-            mutation deleteTxStaging(
-                    $source: String!,
-                    $txTypeSrcId: String!,
-                    $target: String!
-                ) {
-                deleteTxStaging(
-                    source: $source,
-                    txTypeSrcId: $txTypeSrcId,
-                    target: $target
-                ) {
-                    status
-                }
-            }
-        """
         variables = {
             "source": "MAGE2SQS-SANDBOX",
             "txTypeSrcId": "order-2000051509",
             "target": "NS-MAGE2-SANDBOX",
         }
-
-        payload = {"query": query, "variables": variables}
+        payload = {
+            "query": document,
+            "variables": variables,
+            "operation_name": "deleteTxStaging",
+        }
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
     @unittest.skip("demonstrating skipping")
     def test_graphql_tx_staging(self):
-        query = """
-            query($source: String!, $txTypeSrcId: String!, $target: String!) {
-                txStaging(source: $source, txTypeSrcId: $txTypeSrcId, target: $target) {
-                    source
-                    txTypeSrcId
-                    target
-                    tgtId
-                    data
-                    oldData
-                    createdAt
-                    updatedAt
-                    txNote
-                    txStatus
-                }
-            }
-        """
         variables = {
             "source": "sqs",
             "txTypeSrcId": "order-201",
             "target": "ns",
         }
-
-        payload = {"query": query, "variables": variables}
+        payload = {
+            "query": document,
+            "variables": variables,
+            "operation_name": "getTxStaging",
+        }
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
     @unittest.skip("demonstrating skipping")
     def test_graphql_tx_stagings(self):
-        query = """
-            query($pageNumber: Int, $limit: Int, $source: String!, $target: String!, $txType: String) {
-                txStagings(pageNumber: $pageNumber, limit: $limit, source: $source, target: $target, txType: $txType) {
-                    txStagings{
-                        source
-                        txTypeSrcId
-                        target
-                        tgtId
-                        data
-                        oldData
-                        createdAt
-                        updatedAt
-                        txNote
-                        txStatus
-                    }
-                    pageSize
-                    pageNumber
-                    total
-                }
-            }
-        """
         variables = {
             "source": "sqs",
             "target": "ns",
             "txType": "order",
         }
-
-        payload = {"query": query, "variables": variables}
+        payload = {
+            "query": document,
+            "variables": variables,
+            "operation_name": "getTxStagings",
+        }
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
     @unittest.skip("demonstrating skipping")
     def test_graphql_insert_sync_task(self):
-        query = """
-            mutation insertSyncTask(
-                    $id: String,
-                    $txType: String!,
-                    $source: String!,
-                    $target: String!,
-                    $cutDate: DateTime!,
-                    $offset: Int,
-                    $entities: [JSON]!,
-                    $funct: String!
-                ) {
-                insertSyncTask(
-                    id: $id,
-                    txType: $txType,
-                    source: $source,
-                    target: $target,
-                    cutDate: $cutDate,
-                    offset: $offset,
-                    entities: $entities,
-                    funct: $funct
-                ) {
-                    syncTask{
-                        txType
-                        id
-                        source
-                        target
-                        cutDate
-                        startDate
-                        endDate
-                        offset
-                        syncNote
-                        syncStatus
-                        entities
-                    }
-                }
-            }
-        """
         variables = {
             "txType": "order",
             "source": "MAGE2SQS-SANDBOX",
@@ -346,240 +212,112 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
             ],
             "funct": "insert_update_entities_to_target",
         }
-
-        payload = {"query": query, "variables": variables}
+        payload = {
+            "query": document,
+            "variables": variables,
+            "operation_name": "insertSyncTask",
+        }
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
     @unittest.skip("demonstrating skipping")
     def test_graphql_update_sync_task(self):
-        query = """
-            mutation updateSyncTask(
-                    $txType: String!,
-                    $id: String!,
-                    $entities: [JSON]!
-                ) {
-                updateSyncTask(
-                    txType: $txType,
-                    id: $id,
-                    entities: $entities
-                ) {
-                    syncTask{
-                        txType
-                        id
-                        source
-                        target
-                        cutDate
-                        startDate
-                        endDate
-                        offset
-                        syncNote
-                        syncStatus
-                        entities
-                    }
-                }
-            }
-        """
         variables = {
-            "txType": "inventory",
-            "id": "1653017238675",
+            "txType": "order",
+            "id": "17414272959944528366",
             "entities": [
                 {
                     "created_at": "2022-05-20T03:27:24+0000",
-                    "source": "s3",
-                    "tx_note": "datawald -> ss3",
+                    "source": "MAGE2SQS-SANDBOX",
+                    "target": "NS-MAGE2-SANDBOX",
+                    "tx_note": "datawald -> NS-MAGE2-SANDBOX",
                     "tx_status": "S",
-                    "tx_type_src_id": "inventory-ASHWAGANDHARTPDRBOX55",
+                    "tx_type_src_id": "order-2000051509",
                     "updated_at": "2022-05-20T03:27:42+0000",
                 }
             ],
         }
-
-        payload = {"query": query, "variables": variables}
+        payload = {
+            "query": document,
+            "variables": variables,
+            "operation_name": "updateSyncTask",
+        }
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
     @unittest.skip("demonstrating skipping")
     def test_graphql_delete_sync_task(self):
-        query = """
-            mutation deleteSyncTask(
-                    $txType: String!,
-                    $id: String!
-                ) {
-                deleteSyncTask(
-                    txType: $txType,
-                    id: $id
-                ) {
-                    status
-                }
-            }
-        """
-        variables = {"txType": "order", "id": "13229596337889808876"}
-
-        payload = {"query": query, "variables": variables}
+        variables = {"txType": "order", "id": "17414272959944528366"}
+        payload = {
+            "query": document,
+            "variables": variables,
+            "operation_name": "deleteSyncTask",
+        }
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
     @unittest.skip("demonstrating skipping")
     def test_graphql_sync_task(self):
-        query = """
-            query($txType: String!, $id: String!) {
-                syncTask(txType: $txType, id: $id) {
-                    txType
-                    id
-                    source
-                    target
-                    cutDate
-                    startDate
-                    endDate
-                    offset
-                    syncNote
-                    syncStatus
-                    entities
-                }
-            }
-        """
         variables = {
             "txType": "order",
-            "id": "4175549117482144236",
+            "id": "17939953123423818221",
         }
-
-        payload = {"query": query, "variables": variables}
+        payload = {
+            "query": document,
+            "variables": variables,
+            "operation_name": "getSyncTask",
+        }
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
     @unittest.skip("demonstrating skipping")
     def test_graphql_sync_tasks(self):
-        query = """
-            query(
-                $txType: String!, 
-                $source: String!, 
-                $endDateFrom: DateTime!, 
-                $endDateTo: DateTime, 
-                $syncStatuses: [String],
-                $id: String,
-                ) {
-                syncTasks(
-                    txType: $txType, 
-                    source: $source, 
-                    endDateFrom: $endDateFrom, 
-                    endDateTo: $endDateTo, 
-                    syncStatuses: $syncStatuses
-                    id: $id) {
-                    txType
-                    id
-                    source
-                    target
-                    cutDate
-                    startDate
-                    endDate
-                    offset
-                    syncNote
-                    syncStatus
-                    entities
-                }
-            }
-        """
         variables = {
             "txType": "order",
             "source": "ns",
-            "endDateFrom": "2022-03-21T16:06:40+0000",
+            "endDateFrom": "2023-05-21T16:06:40+0000",
             # "endDateTo": "2022-03-24T16:06:40+0000",
             "syncStatuses": ["Completed", "Fail", "Processing"],
         }
-
-        payload = {"query": query, "variables": variables}
+        payload = {
+            "query": document,
+            "variables": variables,
+            "operation_name": "getSyncTasks",
+        }
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
-
     @unittest.skip("demonstrating skipping")
     def test_graphql_sync_task_list(self):
-        query = """
-            query(
-                $txType: String!, 
-                $source: String!, 
-                $pageNumber: Int, 
-                $limit: Int
-                ) {
-                syncTaskList(
-                    txType: $txType, 
-                    source: $source,
-                    pageNumber: $pageNumber, 
-                    limit: $limit
-                   ) {
-                    syncTaskList{
-                        txType
-                        id
-                        source
-                        target
-                        cutDate
-                        startDate
-                        endDate
-                        offset
-                        syncNote
-                        syncStatus
-                        entities
-                    }
-                    pageSize
-                    pageNumber
-                    total
-                }
-            }
-        """
         variables = {
             "txType": "order",
             "source": "ns",
         }
-
-        payload = {"query": query, "variables": variables}
+        payload = {
+            "query": document,
+            "variables": variables,
+            "operation_name": "getSyncTaskList",
+        }
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
-
-    # @unittest.skip("demonstrating skipping")
+    @unittest.skip("demonstrating skipping")
     def test_graphql_cut_date(self):
-        query = """
-            query($txType: String!, $source: String!, $target: String!) {
-                cutDate(txType: $txType, source: $source, target: $target) {
-                    cutDate
-                    offset
-                }
-            }
-        """
         variables = {
             "txType": "product",
             "source": "ns",
             "target": "mage2",
         }
-
-        payload = {"query": query, "variables": variables}
+        payload = {
+            "query": document,
+            "variables": variables,
+            "operation_name": "getCutDate",
+        }
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
     @unittest.skip("demonstrating skipping")
     def test_graphql_insert_product_metadata(self):
-        query = """
-            mutation insertProductMetadata(
-                    $targetSource: String!,
-                    $column: String!,
-                    $metadata: JSON!
-                ) {
-                insertProductMetadata(
-                    targetSource: $targetSource,
-                    column: $column,
-                    metadata: $metadata
-                ) {
-                    productMetadata{
-                        targetSource
-                        column
-                        metadata
-                        createdAt
-                        updatedAt
-                    }
-                }
-            }
-        """
         variables = {
             "targetSource": "NS-MAGE2-SANDBOX",
             "column": "applications",
@@ -607,34 +345,16 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
                 ],
             },
         }
-
-        payload = {"query": query, "variables": variables}
+        payload = {
+            "query": document,
+            "variables": variables,
+            "operation_name": "insertProductMetadata",
+        }
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
     @unittest.skip("demonstrating skipping")
     def test_graphql_update_product_metadata(self):
-        query = """
-            mutation updateProductMetadata(
-                    $targetSource: String!,
-                    $column: String!,
-                    $metadata: JSON!
-                ) {
-                updateProductMetadata(
-                    targetSource: $targetSource,
-                    column: $column,
-                    metadata: $metadata
-                ) {
-                    productMetadata{
-                        targetSource
-                        column
-                        metadata
-                        createdAt
-                        updatedAt
-                    }
-                }
-            }
-        """
         variables = {
             "targetSource": "NS-MAGE2-SANDBOX",
             "column": "applications",
@@ -662,232 +382,154 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
                 ],
             },
         }
-
-        payload = {"query": query, "variables": variables}
+        payload = {
+            "query": document,
+            "variables": variables,
+            "operation_name": "updateProductMetadata",
+        }
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
     @unittest.skip("demonstrating skipping")
     def test_graphql_delete_product_metadata(self):
-        query = """
-            mutation deleteProductMetadata(
-                    $targetSource: String!,
-                    $column: String!
-                ) {
-                deleteProductMetadata(
-                    targetSource: $targetSource,
-                    column: $column
-                ) {
-                    status
-                }
-            }
-        """
         variables = {"targetSource": "NS-MAGE2-SANDBOX", "column": "applications"}
-
-        payload = {"query": query, "variables": variables}
+        payload = {
+            "query": document,
+            "variables": variables,
+            "operation_name": "deleteProductMetadata",
+        }
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
     @unittest.skip("demonstrating skipping")
     def test_graphql_product_metadatas(self):
-        query = """
-            query($targetSource: String!) {
-                productMetadatas(targetSource: $targetSource) {
-                    targetSource
-                    column
-                    metadata
-                    createdAt
-                    updatedAt
-                }
-            }
-        """
         variables = {
-            "targetSource": "NS-MAGE2-SANDBOX",
+            "targetSource": "mage2-ss3",
         }
-
-        payload = {"query": query, "variables": variables}
+        payload = {
+            "query": document,
+            "variables": variables,
+            "operation_name": "getProductMetadatas",
+        }
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
     @unittest.skip("demonstrating skipping")
     def test_graphql_put_messages(self):
-        query = """
-            mutation putMessages(
-                $txType: String!,
-                $source: String!,
-                $target: String!,
-                $messages: [JSON]!
-                ) {
-                putMessages(
-                    txType: $txType,
-                    source: $source,
-                    target: $target,
-                    messages: $messages
-                ) {
-                    messageGroupId
-                }
-            }
-        """
         variables = {
+            "target": "ns",
+            "source": "sqs",
             "txType": "order",
-            "source": "MAGE2SQS-SANDBOX",
-            "target": "NS-MAGE2-SANDBOX",
             "messages": [
                 {
-                    "additional_tc_timestamp": "2022-03-14 17:57:37",
-                    "additional_tc_version": "####",
+                    "order_date": "2022-11-15 01:15:12",
+                    "order_create_date": "2022-11-15 01:15:12",
+                    "created_at": "2022-11-15T01:15:12+00:00",
+                    "updated_at": "2022-11-15T01:15:24+00:00",
+                    "order_id": "2000054714Y",
+                    "order_status": "new",
+                    "ship_method": "ups_ground",
+                    "shipping_total": "31.8700",
+                    "firstname": "Bibo",
+                    "lastname": "W.",
+                    "payment_method": "checkmo",
+                    "ns_customer_id": "14142",
+                    "order_type": "Non-Inventory Sample",
+                    "shipping_carrier_other": "To be determined by shipper",
+                    "freight_terms": "Collect",
+                    "fob_remarks": "Origin",
+                    "delivery_type": "Regular",
+                    "hold_reason": "Pending Outside US Shipping Approval",
+                    "ship_method_internal_id": "15",
+                    "class": "Sales-Online",
+                    "subsidiary": "GWI",
+                    "shipping_instructions": "test po",
+                    "warehouse": "GWI-Chino",
+                    "customer_po_no": "canada po",
+                    "items": [
+                        {
+                            "sku": "10002-101-10485-10763",
+                            "qty": "20.0000",
+                            "lot_no_locs": [{"lot_no": "12344", "deduct_qty": "20"}],
+                        }
+                    ],
                     "addresses": {
                         "billto": {
                             "firstname": "Bibo",
                             "lastname": "W.",
+                            "company": "Believe Supplements",
                             "email": "bibo72@outlook.com",
-                            "address": "101 Main St",
-                            "city": "Tustin",
-                            "region": "CA",
-                            "postcode": "92705",
-                            "country": "US",
+                            "address": "719 boulevard industriel suite 104",
+                            "city": "Blainville",
+                            "region": "Quebec",
+                            "postcode": "J7C3V3",
+                            "country": "CA",
                         },
                         "shipto": {
                             "firstname": "Bibo",
                             "lastname": "W.",
-                            "address": "101 Main St",
-                            "city": "Tustin",
-                            "region": "CA",
-                            "postcode": "92705",
-                            "country": "US",
+                            "company": "Believe Supplements",
+                            "email": "bibo72@outlook.com",
+                            "address": "719 boulevard industriel suite 104",
+                            "city": "Blainville",
+                            "region": "Quebec",
+                            "postcode": "J7C3V3",
+                            "country": "CA",
                         },
                     },
-                    "ns_customer_id": "14142",
-                    "class": "Sales-Online",
-                    "order_create_date": "2022-03-14 18:00:06",
-                    "credit_card_type": "VI",
-                    "customer_po_no": "202203141057",
-                    "delivery_type": "Regular",
-                    "mage2_customer_id": "3142",
-                    "order_date": "2022-03-14 17:57:37",
-                    "order_id": "2000069787",
-                    "order_status": "processing",
-                    "order_update_date": "2022-03-14 17:57:37",
-                    "firstname": "Bibo",
-                    "fob_remarks": "Origin",
-                    "freight_terms": "Collect",
-                    "hold_reason": "Pending Online Order Approval",
-                    "id": "94c24750-a3c0-11ec-a9c4-964b390a1137",
-                    "items": [
-                        {"price": 9.5, "qty": "25.0000", "sku": "93801-100-10245-11084"}
-                    ],
-                    "lastname": "W.",
-                    "order_type": "Online",
-                    "payment_method": "authnetcim",
-                    "ship_method": "will_call",
-                    "ship_method_internal_id": "15",
-                    "shipping_carrier_other": "To be determined by shipper",
-                    "shipping_instructions": "Please place at the hall.",
-                    "shipping_total": "0.0000",
-                    "subsidiary": "GWI",
-                    "warehouse": "GWI-Chino",
                 }
             ],
         }
-
-        payload = {"query": query, "variables": variables}
+        payload = {
+            "query": document,
+            "variables": variables,
+            "operation_name": "putMessages",
+        }
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
     @unittest.skip("demonstrating skipping")
     def test_graphql_resolve_data_feed_count(self):
-        query = """
-            query(
-                $source: String!, 
-                $updatedAtFrom: DateTime!, 
-                $updatedAtTo: DateTime!, 
-                $tableName: String!) {
-                dataFeedCount(
-                    source: $source, 
-                    updatedAtFrom: $updatedAtFrom, 
-                    updatedAtTo: $updatedAtTo, 
-                    tableName: $tableName
-                )
-            }
-        """
         variables = {
             "source": "ns",
             "updatedAtFrom": "2022-03-21T16:06:40+0000",
-            "updatedAtTo": "2022-03-23T16:06:40+0000",
-            "tableName": "datamart_salesorders",
+            "updatedAtTo": "2023-03-23T16:06:40+0000",
+            "tableName": "datamart_salesorders_v2",
         }
-
-        payload = {"query": query, "variables": variables}
+        payload = {
+            "query": document,
+            "variables": variables,
+            "operation_name": "getDataFeedCount",
+        }
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
     @unittest.skip("demonstrating skipping")
     def test_graphql_resolve_data_feed_entities(self):
-        query = """
-            query(
-                $source: String!, 
-                $updatedAtFrom: DateTime, 
-                $updatedAtTo: DateTime, 
-                $tableName: String!,
-                $limit: Int,
-                $offset: Int,
-                $value: String,
-                $key: String!) {
-                dataFeedEntities(
-                    source: $source, 
-                    updatedAtFrom: $updatedAtFrom, 
-                    updatedAtTo: $updatedAtTo, 
-                    tableName: $tableName,
-                    limit: $limit,
-                    offset: $offset,
-                    value: $value,
-                    key: $key) {
-                        source
-                        id
-                        key
-                        value
-                        data
-                        createdAt
-                        updatedAt
-
-                }
-            }
-        """
         variables = {
             "source": "ns",
             "updatedAtFrom": "2022-03-21T16:06:40+0000",
             # "updatedAtTo": "2022-03-23T16:06:40+0000",
-            "tableName": "datamart_salesorders",
+            "tableName": "datamart_salesorders_v2",
             # "value": "2000054555",
             "key": "ecom_so",
         }
-
-        payload = {"query": query, "variables": variables}
+        payload = {
+            "query": document,
+            "variables": variables,
+            "operation_name": "getDataFeedEntities",
+        }
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
-    @unittest.skip("demonstrating skipping")
+    # @unittest.skip("demonstrating skipping")
     def test_graphql_retry_sync_task(self):
-        query = """
-            mutation retrySyncTask(
-                $txType: String!,
-                $source: String!,
-                $id: String!,
-                $funct: String
-                ) {
-                retrySyncTask(
-                    txType: $txType,
-                    source: $source,
-                    id: $id,
-                    funct: $funct
-                ) {
-                    messageGroupId
-                }
-            }
-        """
-        variables = {"txType": "order", "source": "sqs", "id": "256736530604495340"}
-
-        payload = {"query": query, "variables": variables}
+        variables = {"txType": "order", "source": "sqs", "id": "15340979593176158701"}
+        payload = {
+            "query": document,
+            "variables": variables,
+            "operation_name": "retrySyncTask",
+        }
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 

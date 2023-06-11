@@ -37,17 +37,21 @@ class DataWaldInterfaceEngine(object):
             context = {"logger": self.logger, "setting": self.setting}
 
             variables = params.get("variables", {})
-            operations = params.get("query")
+            query = params.get("query")
+            operation_name = params.get("operation_name")
             response = {
                 "errors": "Invalid operations.",
                 "status_code": 400,
             }
 
-            if not operations:
+            if not query:
                 return Utility.json_dumps(response)
 
             execution_result = schema.execute(
-                operations, context_value=context, variable_values=variables
+                query,
+                context_value=context,
+                variable_values=variables,
+                operation_name=operation_name,
             )
 
             if execution_result.errors:

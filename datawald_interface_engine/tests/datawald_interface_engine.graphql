@@ -1,0 +1,401 @@
+fragment TxStagingInfo on TxStagingType {
+    source
+    txTypeSrcId
+    target
+    tgtId
+    data
+    oldData
+    createdAt
+    updatedAt
+    txNote
+    txStatus
+}
+
+fragment TxStagingsInfo on TxStagingsType {
+    txStagings{
+        ...TxStagingInfo
+    }
+    pageSize
+    pageNumber
+    total
+}
+
+fragment SyncTaskInfo on SyncTaskType {
+    txType
+    id
+    source
+    target
+    cutDate
+    startDate
+    endDate
+    offset
+    syncNote
+    syncStatus
+    entities
+}
+
+fragment SyncTaskListInfo on SyncTaskListType {
+    syncTaskList{
+        ...SyncTaskInfo
+    }
+    pageSize
+    pageNumber
+    total
+}
+
+fragment ProductMetadataInfo on ProductMetadataType {
+    targetSource
+    column
+    metadata
+    createdAt
+    updatedAt
+}
+
+fragment DataFeedEntityInfo on DataFeedEntityType {
+    source
+    id
+    key
+    value
+    data
+    createdAt
+    updatedAt
+}
+
+query ping {
+    ping
+}
+
+query getTxStaging(
+    $source: String!, 
+    $txTypeSrcId: String!, 
+    $target: String!
+) {
+    txStaging(
+        source: $source, 
+        txTypeSrcId: $txTypeSrcId, 
+        target: $target
+    ) {
+        ...TxStagingInfo
+    }
+}
+
+query getTxStagings(
+    $pageNumber: Int, 
+    $limit: Int, 
+    $source: String!, 
+    $target: String!, 
+    $txType: String
+) {
+    txStagings(
+        pageNumber: $pageNumber, 
+        limit: $limit, 
+        source: $source, 
+        target: $target, 
+        txType: $txType
+    ) {
+        ...TxStagingsInfo
+    }
+}
+
+mutation insertTxStaging(
+    $source: String!,
+    $txTypeSrcId: String!,
+    $target: String!,
+    $data: JSON!,
+    $txStatus: String!,
+    $txNote: String!,
+    $createdAt: DateTime!,
+    $updatedAt: DateTime!
+) {
+    insertTxStaging(
+        source: $source,
+        txTypeSrcId: $txTypeSrcId,
+        target: $target,
+        data: $data,
+        txStatus: $txStatus,
+        txNote: $txNote,
+        createdAt: $createdAt,
+        updatedAt: $updatedAt
+    ) {
+        txStaging{
+            ...TxStagingInfo
+        }
+    }
+}
+
+mutation updateTxStaging(
+    $source: String!,
+    $txTypeSrcId: String!,
+    $target: String!,
+    $tgtId: String!,
+    $txStatus: String!,
+    $txNote: String!,
+    $updatedAt: DateTime!
+) {
+    updateTxStaging(
+        source: $source,
+        txTypeSrcId: $txTypeSrcId,
+        target: $target,
+        tgtId: $tgtId,
+        txStatus: $txStatus,
+        txNote: $txNote,
+        updatedAt: $updatedAt
+    ) {
+        status
+    }
+}
+
+mutation deleteTxStaging(
+    $source: String!,
+    $txTypeSrcId: String!,
+    $target: String!
+) {
+    deleteTxStaging(
+        source: $source,
+        txTypeSrcId: $txTypeSrcId,
+        target: $target
+    ) {
+        status
+    }
+}
+
+query getSyncTask(
+    $txType: String!, 
+    $id: String!
+) {
+    syncTask(
+        txType: $txType, 
+        id: $id
+    ) {
+        ...SyncTaskInfo
+    }
+}
+
+query getSyncTasks(
+    $txType: String!, 
+    $source: String!, 
+    $endDateFrom: DateTime!, 
+    $endDateTo: DateTime, 
+    $syncStatuses: [String],
+    $id: String,
+) {
+    syncTasks(
+        txType: $txType, 
+        source: $source, 
+        endDateFrom: $endDateFrom, 
+        endDateTo: $endDateTo, 
+        syncStatuses: $syncStatuses
+        id: $id
+    ) {
+        ...SyncTaskInfo
+    }
+}
+
+query getSyncTaskList(
+    $txType: String!, 
+    $source: String!, 
+    $pageNumber: Int, 
+    $limit: Int
+) {
+    syncTaskList(
+        txType: $txType, 
+        source: $source,
+        pageNumber: $pageNumber, 
+        limit: $limit
+    ) {
+        ...SyncTaskListInfo
+    }
+}
+
+mutation insertSyncTask(
+    $id: String,
+    $txType: String!,
+    $source: String!,
+    $target: String!,
+    $cutDate: DateTime!,
+    $offset: Int,
+    $entities: [JSON]!,
+    $funct: String!
+) {
+    insertSyncTask(
+        id: $id,
+        txType: $txType,
+        source: $source,
+        target: $target,
+        cutDate: $cutDate,
+        offset: $offset,
+        entities: $entities,
+        funct: $funct
+    ) {
+        syncTask{
+            ...SyncTaskInfo
+        }
+    }
+}
+
+mutation updateSyncTask(
+    $txType: String!,
+    $id: String!,
+    $entities: [JSON]!
+) {
+    updateSyncTask(
+        txType: $txType,
+        id: $id,
+        entities: $entities
+    ) {
+        syncTask{
+            ...SyncTaskInfo
+        }
+    }
+}
+
+mutation deleteSyncTask(
+    $txType: String!,
+    $id: String!
+) {
+    deleteSyncTask(
+        txType: $txType,
+        id: $id
+    ) {
+        status
+    }
+}
+
+query getProductMetadatas(
+    $targetSource: String!
+) {
+    productMetadatas(
+        targetSource: $targetSource
+    ) {
+        ...ProductMetadataInfo
+    }
+}
+
+mutation insertProductMetadata(
+    $targetSource: String!,
+    $column: String!,
+    $metadata: JSON!
+) {
+    insertProductMetadata(
+        targetSource: $targetSource,
+        column: $column,
+        metadata: $metadata
+    ) {
+        productMetadata{
+            ...ProductMetadataInfo
+        }
+    }
+}
+
+mutation updateProductMetadata(
+    $targetSource: String!,
+    $column: String!,
+    $metadata: JSON!
+) {
+    updateProductMetadata(
+        targetSource: $targetSource,
+        column: $column,
+        metadata: $metadata
+    ) {
+        productMetadata{
+            ...ProductMetadataInfo
+        }
+    }
+}
+
+mutation deleteProductMetadata(
+    $targetSource: String!,
+    $column: String!
+) {
+    deleteProductMetadata(
+        targetSource: $targetSource,
+        column: $column
+    ) {
+        status
+    }
+}
+
+query getCutDate(
+    $txType: String!, 
+    $source: String!, 
+    $target: String!
+) {
+    cutDate(
+        txType: $txType, 
+        source: $source, 
+        target: $target
+    ) {
+        cutDate
+        offset
+    }
+}
+
+mutation putMessages(
+    $txType: String!,
+    $source: String!,
+    $target: String!,
+    $messages: [JSON]!
+) {
+    putMessages(
+        txType: $txType,
+        source: $source,
+        target: $target,
+        messages: $messages
+    ) {
+        messageGroupId
+    }
+}
+
+query getDataFeedCount(
+    $source: String!, 
+    $updatedAtFrom: DateTime!, 
+    $updatedAtTo: DateTime!, 
+    $tableName: String!
+) {
+    dataFeedCount(
+        source: $source, 
+        updatedAtFrom: $updatedAtFrom, 
+        updatedAtTo: $updatedAtTo, 
+        tableName: $tableName
+    )
+}
+
+query getDataFeedEntities(
+    $source: String!, 
+    $updatedAtFrom: DateTime, 
+    $updatedAtTo: DateTime, 
+    $tableName: String!,
+    $limit: Int,
+    $offset: Int,
+    $value: String,
+    $key: String!
+) {
+    dataFeedEntities(
+        source: $source, 
+        updatedAtFrom: $updatedAtFrom, 
+        updatedAtTo: $updatedAtTo, 
+        tableName: $tableName,
+        limit: $limit,
+        offset: $offset,
+        value: $value,
+        key: $key
+    ) {
+        ...DataFeedEntityInfo
+    }
+}
+
+mutation retrySyncTask(
+    $txType: String!,
+    $source: String!,
+    $id: String!,
+    $funct: String
+) {
+    retrySyncTask(
+        txType: $txType,
+        source: $source,
+        id: $id,
+        funct: $funct
+    ) {
+        messageGroupId
+    }
+}
