@@ -1,9 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 from __future__ import print_function
-from importlib.metadata import metadata
-
-from sqlalchemy import column
 
 __author__ = "bibow"
 
