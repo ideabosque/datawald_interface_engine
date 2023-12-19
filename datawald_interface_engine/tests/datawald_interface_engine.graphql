@@ -11,8 +11,8 @@ fragment TxStagingInfo on TxStagingType {
     txStatus
 }
 
-fragment TxStagingsInfo on TxStagingsType {
-    txStagings{
+fragment TxStagingListInfo on TxStagingListType {
+    txStagingList{
         ...TxStagingInfo
     }
     pageSize
@@ -51,6 +51,15 @@ fragment ProductMetadataInfo on ProductMetadataType {
     updatedAt
 }
 
+fragment ProductMetadataListInfo on ProductMetadataListType {
+    productMetadataList{
+        ...ProductMetadataInfo
+    }
+    pageSize
+    pageNumber
+    total
+}
+
 fragment DataFeedEntityInfo on DataFeedEntityType {
     source
     id
@@ -79,21 +88,21 @@ query getTxStaging(
     }
 }
 
-query getTxStagings(
+query getTxStagingList(
     $pageNumber: Int, 
     $limit: Int, 
     $source: String!, 
     $target: String!, 
     $txType: String
 ) {
-    txStagings(
+    txStagingList(
         pageNumber: $pageNumber, 
         limit: $limit, 
         source: $source, 
         target: $target, 
         txType: $txType
     ) {
-        ...TxStagingsInfo
+        ...TxStagingListInfo
     }
 }
 
@@ -171,15 +180,15 @@ query getSyncTask(
     }
 }
 
-query getSyncTasks(
+query getSyncTaskList(
     $txType: String!, 
-    $source: String!, 
+    $source: String, 
     $endDateFrom: DateTime!, 
     $endDateTo: DateTime, 
     $syncStatuses: [String],
     $id: String,
 ) {
-    syncTasks(
+    syncTaskList(
         txType: $txType, 
         source: $source, 
         endDateFrom: $endDateFrom, 
@@ -187,37 +196,21 @@ query getSyncTasks(
         syncStatuses: $syncStatuses
         id: $id
     ) {
-        ...SyncTaskInfo
-    }
-}
-
-query getSyncTaskList(
-    $txType: String!, 
-    $source: String!, 
-    $pageNumber: Int, 
-    $limit: Int
-) {
-    syncTaskList(
-        txType: $txType, 
-        source: $source,
-        pageNumber: $pageNumber, 
-        limit: $limit
-    ) {
         ...SyncTaskListInfo
     }
 }
 
-mutation insertSyncTask(
+mutation insertUpdateSyncTask(
     $id: String,
     $txType: String!,
-    $source: String!,
-    $target: String!,
-    $cutDate: DateTime!,
+    $source: String,
+    $target: String,
+    $cutDate: DateTime,
     $offset: Int,
     $entities: [JSON]!,
-    $funct: String!
+    $funct: String
 ) {
-    insertSyncTask(
+    insertUpdateSyncTask(
         id: $id,
         txType: $txType,
         source: $source,
@@ -226,22 +219,6 @@ mutation insertSyncTask(
         offset: $offset,
         entities: $entities,
         funct: $funct
-    ) {
-        syncTask{
-            ...SyncTaskInfo
-        }
-    }
-}
-
-mutation updateSyncTask(
-    $txType: String!,
-    $id: String!,
-    $entities: [JSON]!
-) {
-    updateSyncTask(
-        txType: $txType,
-        id: $id,
-        entities: $entities
     ) {
         syncTask{
             ...SyncTaskInfo
@@ -261,38 +238,34 @@ mutation deleteSyncTask(
     }
 }
 
-query getProductMetadatas(
-    $targetSource: String!
+query getProductMetadata(
+    $targetSource: String!,
+    $column: String!
 ) {
-    productMetadatas(
-        targetSource: $targetSource
+    productMetadata(
+        targetSource: $targetSource,
+        column: $column
     ) {
         ...ProductMetadataInfo
     }
 }
 
-mutation insertProductMetadata(
-    $targetSource: String!,
-    $column: String!,
-    $metadata: JSON!
+query getProductMetadataList(
+    $targetSource: String!
 ) {
-    insertProductMetadata(
-        targetSource: $targetSource,
-        column: $column,
-        metadata: $metadata
+    productMetadataList(
+        targetSource: $targetSource
     ) {
-        productMetadata{
-            ...ProductMetadataInfo
-        }
+        ...ProductMetadataListInfo
     }
 }
 
-mutation updateProductMetadata(
+mutation insertUpdateProductMetadata(
     $targetSource: String!,
     $column: String!,
     $metadata: JSON!
 ) {
-    updateProductMetadata(
+    insertUpdateProductMetadata(
         targetSource: $targetSource,
         column: $column,
         metadata: $metadata

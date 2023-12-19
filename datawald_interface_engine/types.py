@@ -15,6 +15,7 @@ from graphene import (
     Boolean,
 )
 from silvaengine_utility import JSON
+from silvaengine_dynamodb_base import ListObjectType
 
 
 class CutDateType(ObjectType):
@@ -68,15 +69,13 @@ class DataFeedEntityType(ObjectType):
     updated_at = DateTime()
 
 
-class ListObjectType(ObjectType):
-    page_size = Int()
-    page_number = Int()
-    total = Int()
-
-
-class TxStagingsType(ListObjectType):
-    tx_stagings = List(TxStagingType)
+class TxStagingListType(ListObjectType):
+    tx_staging_list = List(TxStagingType)
 
 
 class SyncTaskListType(ListObjectType):
     sync_task_list = List(SyncTaskType)
+
+
+class ProductMetadataListType(ListObjectType):
+    product_metadata_list = List(ProductMetadataType)

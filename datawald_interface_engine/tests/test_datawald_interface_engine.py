@@ -25,6 +25,7 @@ document = Path(
 ).read_text()
 sys.path.insert(0, "/var/www/projects/datawald_interface_engine")
 sys.path.insert(1, "/var/www/projects/dynamodb_connector")
+sys.path.insert(2, "/var/www/projects/silvaengine_dynamodb_base")
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 logger = logging.getLogger()
@@ -50,7 +51,7 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
-    @unittest.skip("demonstrating skipping")
+    # @unittest.skip("demonstrating skipping")
     def test_graphql_insert_tx_staging(self):
         variables = {
             "source": "MAGE2SQS-SANDBOX",
@@ -166,9 +167,9 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
     @unittest.skip("demonstrating skipping")
     def test_graphql_tx_staging(self):
         variables = {
-            "source": "sqs",
-            "txTypeSrcId": "order-201",
-            "target": "ns",
+            "source": "MAGE2SQS-SANDBOX",
+            "txTypeSrcId": "order-2000051509",
+            "target": "NS-MAGE2-SANDBOX",
         }
         payload = {
             "query": document,
@@ -179,52 +180,42 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
         logger.info(response)
 
     @unittest.skip("demonstrating skipping")
-    def test_graphql_tx_stagings(self):
+    def test_graphql_tx_staging_list(self):
         variables = {
-            "source": "sqs",
-            "target": "ns",
+            "source": "MAGE2SQS-SANDBOX",
+            "target": "NS-MAGE2-SANDBOX",
             "txType": "order",
         }
         payload = {
             "query": document,
             "variables": variables,
-            "operation_name": "getTxStagings",
+            "operation_name": "getTxStagingList",
         }
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
     @unittest.skip("demonstrating skipping")
     def test_graphql_insert_sync_task(self):
+        # variables = {
+        #     "txType": "order",
+        #     "source": "MAGE2SQS-SANDBOX",
+        #     "target": "NS-MAGE2-SANDBOX",
+        #     "cutDate": "2022-03-08T13:00:00",
+        #     "offset": 0,
+        #     "entities": [
+        #         {
+        #             "source": "MAGE2SQS-SANDBOX",
+        #             "tx_type_src_id": "order-2000051509",
+        #             "target": "NS-MAGE2-SANDBOX",
+        #             "created_at": "2022-03-08T13:00:00",
+        #             "updated_at": "2022-03-08T13:00:00",
+        #         }
+        #     ],
+        #     "funct": "insert_update_entities_to_target",
+        # }
         variables = {
             "txType": "order",
-            "source": "MAGE2SQS-SANDBOX",
-            "target": "NS-MAGE2-SANDBOX",
-            "cutDate": "2022-03-08T13:00:00",
-            "offset": 0,
-            "entities": [
-                {
-                    "source": "MAGE2SQS-SANDBOX",
-                    "tx_type_src_id": "order-2000051509",
-                    "target": "NS-MAGE2-SANDBOX",
-                    "created_at": "2022-03-08T13:00:00",
-                    "updated_at": "2022-03-08T13:00:00",
-                }
-            ],
-            "funct": "insert_update_entities_to_target",
-        }
-        payload = {
-            "query": document,
-            "variables": variables,
-            "operation_name": "insertSyncTask",
-        }
-        response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
-        logger.info(response)
-
-    @unittest.skip("demonstrating skipping")
-    def test_graphql_update_sync_task(self):
-        variables = {
-            "txType": "order",
-            "id": "17414272959944528366",
+            "id": "14872411042064699886",
             "entities": [
                 {
                     "created_at": "2022-05-20T03:27:24+0000",
@@ -240,7 +231,7 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
         payload = {
             "query": document,
             "variables": variables,
-            "operation_name": "updateSyncTask",
+            "operation_name": "insertUpdateSyncTask",
         }
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
@@ -260,7 +251,7 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
     def test_graphql_sync_task(self):
         variables = {
             "txType": "order",
-            "id": "17939953123423818221",
+            "id": "14872411042064699886",
         }
         payload = {
             "query": document,
@@ -271,27 +262,13 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
         logger.info(response)
 
     @unittest.skip("demonstrating skipping")
-    def test_graphql_sync_tasks(self):
+    def test_graphql_sync_task_list(self):
         variables = {
             "txType": "order",
             "source": "ns",
             "endDateFrom": "2023-05-21T16:06:40+0000",
             # "endDateTo": "2022-03-24T16:06:40+0000",
             "syncStatuses": ["Completed", "Fail", "Processing"],
-        }
-        payload = {
-            "query": document,
-            "variables": variables,
-            "operation_name": "getSyncTasks",
-        }
-        response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
-        logger.info(response)
-
-    @unittest.skip("demonstrating skipping")
-    def test_graphql_sync_task_list(self):
-        variables = {
-            "txType": "order",
-            "source": "ns",
         }
         payload = {
             "query": document,
@@ -317,7 +294,7 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
         logger.info(response)
 
     @unittest.skip("demonstrating skipping")
-    def test_graphql_insert_product_metadata(self):
+    def test_graphql_insert_update_product_metadata(self):
         variables = {
             "targetSource": "NS-MAGE2-SANDBOX",
             "column": "applications",
@@ -345,47 +322,48 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
                 ],
             },
         }
+        # variables = {
+        #     "targetSource": "NS-MAGE2-SANDBOX",
+        #     "column": "applications",
+        #     "metadata": {
+        #         "dest": "applications",
+        #         "funct": "[] if src.get('applications') is None or src.get('applications') == '' else [src['application_list'][i] for i in src.get('applications').strip('[').strip(']').split(',') if i in src['application_list'].keys()] + ['Applications']",
+        #         "schema": {"applications": {"required": False, "type": "list"}},
+        #         "src": [
+        #             {"key": "applications", "label": "applications"},
+        #             {
+        #                 "default": {
+        #                     "137": "Animal Nutrition",
+        #                     "744": "Sports Nutrition",
+        #                     "745": "Weight Management",
+        #                     "746": "Immune Support",
+        #                     "747": "Joint Support",
+        #                     "748": "Digestive Support",
+        #                     "749": "Hair, Skin, & Nails",
+        #                     "756": "Cognitive Support",
+        #                     "766": "Food and Beverage",
+        #                     "903": "Cosmetics",
+        #                 },
+        #                 "label": "application_list",
+        #             },
+        #         ],
+        #     },
+        # }
         payload = {
             "query": document,
             "variables": variables,
-            "operation_name": "insertProductMetadata",
+            "operation_name": "insertUpdateProductMetadata",
         }
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
     @unittest.skip("demonstrating skipping")
-    def test_graphql_update_product_metadata(self):
-        variables = {
-            "targetSource": "NS-MAGE2-SANDBOX",
-            "column": "applications",
-            "metadata": {
-                "dest": "applications",
-                "funct": "[] if src.get('applications') is None or src.get('applications') == '' else [src['application_list'][i] for i in src.get('applications').strip('[').strip(']').split(',') if i in src['application_list'].keys()] + ['Applications']",
-                "schema": {"applications": {"required": False, "type": "list"}},
-                "src": [
-                    {"key": "applications", "label": "applications"},
-                    {
-                        "default": {
-                            "137": "Animal Nutrition",
-                            "744": "Sports Nutrition",
-                            "745": "Weight Management",
-                            "746": "Immune Support",
-                            "747": "Joint Support",
-                            "748": "Digestive Support",
-                            "749": "Hair, Skin, & Nails",
-                            "756": "Cognitive Support",
-                            "766": "Food and Beverage",
-                            "903": "Cosmetics",
-                        },
-                        "label": "application_list",
-                    },
-                ],
-            },
-        }
+    def test_graphql_product_metadata(self):
+        variables = {"targetSource": "NS-MAGE2-SANDBOX", "column": "applications"}
         payload = {
             "query": document,
             "variables": variables,
-            "operation_name": "updateProductMetadata",
+            "operation_name": "getProductMetadata",
         }
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
@@ -402,14 +380,14 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
         logger.info(response)
 
     @unittest.skip("demonstrating skipping")
-    def test_graphql_product_metadatas(self):
+    def test_graphql_product_metadata_list(self):
         variables = {
             "targetSource": "mage2-ss3",
         }
         payload = {
             "query": document,
             "variables": variables,
-            "operation_name": "getProductMetadatas",
+            "operation_name": "getProductMetadataList",
         }
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
@@ -522,7 +500,7 @@ class DataWaldInterfaceEngineTest(unittest.TestCase):
         response = self.datawald_interface_engine.datawald_interface_graphql(**payload)
         logger.info(response)
 
-    # @unittest.skip("demonstrating skipping")
+    @unittest.skip("demonstrating skipping")
     def test_graphql_retry_sync_task(self):
         variables = {"txType": "order", "source": "sqs", "id": "15340979593176158701"}
         payload = {

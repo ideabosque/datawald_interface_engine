@@ -11,31 +11,30 @@ from .types import (
     SyncTaskType,
     SyncTaskListType,
     TxStagingType,
-    TxStagingsType,
+    TxStagingListType,
     ProductMetadataType,
+    ProductMetadataListType,
     DataFeedEntityType,
 )
 from .mutations import (
     InsertTxStaging,
     UpdateTxStaging,
     DeleteTxStaging,
-    InsertSyncTask,
-    UpdateSyncTask,
+    InsertUpdateSyncTask,
     DeleteSyncTask,
-    InsertProductMetadata,
-    UpdateProductMetadata,
+    InsertUpdateProductMetadata,
     DeleteProductMetadata,
     PutMessages,
     RetrySyncTask,
 )
 from .queries import (
     resolve_tx_staging,
-    resolve_tx_stagings,
+    resolve_tx_staging_list,
     resolve_cut_date,
     resolve_sync_task,
-    resolve_sync_tasks,
     resolve_sync_task_list,
-    resolve_product_metadatas,
+    resolve_product_metadata,
+    resolve_product_metadata_list,
     resolve_data_feed_count,
     resolve_data_feed_entities,
 )
@@ -47,8 +46,9 @@ def type_class():
         SyncTaskType,
         SyncTaskListType,
         TxStagingType,
-        TxStagingsType,
+        TxStagingListType,
         ProductMetadataType,
+        ProductMetadataListType,
         DataFeedEntityType,
     ]
 
@@ -63,8 +63,8 @@ class Query(ObjectType):
         target=String(required=True),
     )
 
-    tx_stagings = Field(
-        TxStagingsType,
+    tx_staging_list = Field(
+        TxStagingListType,
         page_number=Int(),
         limit=Int(),
         source=String(required=True),
@@ -85,26 +85,26 @@ class Query(ObjectType):
         id=String(required=True),
     )
 
-    sync_tasks = List(
-        SyncTaskType,
-        tx_type=String(required=True),
-        source=String(required=True),
-        end_date_from=DateTime(required=True),
-        end_date_to=DateTime(),
-        sync_statuses=List(String),
-        id=String(),
-    )
-
     sync_task_list = Field(
         SyncTaskListType,
         page_number=Int(),
         limit=Int(),
         tx_type=String(required=True),
-        source=String(required=True),
+        source=String(),
+        end_date_from=DateTime(),
+        end_date_to=DateTime(),
+        sync_statuses=List(String),
+        id=String(),
     )
 
-    product_metadatas = List(
+    product_metadata = Field(
         ProductMetadataType,
+        target_source=String(required=True),
+        column=String(required=True),
+    )
+
+    product_metadata_list = Field(
+        ProductMetadataListType,
         target_source=String(required=True),
     )
 
@@ -134,8 +134,8 @@ class Query(ObjectType):
     def resolve_tx_staging(self, info, **kwargs):
         return resolve_tx_staging(info, **kwargs)
 
-    def resolve_tx_stagings(self, info, **kwargs):
-        return resolve_tx_stagings(info, **kwargs)
+    def resolve_tx_staging_list(self, info, **kwargs):
+        return resolve_tx_staging_list(info, **kwargs)
 
     def resolve_cut_date(self, info, **kwargs):
         return resolve_cut_date(info, **kwargs)
@@ -143,14 +143,14 @@ class Query(ObjectType):
     def resolve_sync_task(self, info, **kwargs):
         return resolve_sync_task(info, **kwargs)
 
-    def resolve_sync_tasks(self, info, **kwargs):
-        return resolve_sync_tasks(info, **kwargs)
-
     def resolve_sync_task_list(self, info, **kwargs):
         return resolve_sync_task_list(info, **kwargs)
 
-    def resolve_product_metadatas(self, info, **kwargs):
-        return resolve_product_metadatas(info, **kwargs)
+    def resolve_product_metadata(self, info, **kwargs):
+        return resolve_product_metadata(info, **kwargs)
+
+    def resolve_product_metadata_list(self, info, **kwargs):
+        return resolve_product_metadata_list(info, **kwargs)
 
     def resolve_data_feed_count(self, info, **kwargs):
         return resolve_data_feed_count(info, **kwargs)
@@ -163,11 +163,9 @@ class Mutations(ObjectType):
     insert_tx_staging = InsertTxStaging.Field()
     update_tx_staging = UpdateTxStaging.Field()
     delete_tx_staging = DeleteTxStaging.Field()
-    insert_sync_task = InsertSyncTask.Field()
-    update_sync_task = UpdateSyncTask.Field()
+    insert_update_sync_task = InsertUpdateSyncTask.Field()
     delete_sync_task = DeleteSyncTask.Field()
-    insert_product_metadata = InsertProductMetadata.Field()
-    update_product_metadata = UpdateProductMetadata.Field()
+    insert_update_product_metadata = InsertUpdateProductMetadata.Field()
     delete_product_metadata = DeleteProductMetadata.Field()
     put_messages = PutMessages.Field()
     retry_sync_task = RetrySyncTask.Field()

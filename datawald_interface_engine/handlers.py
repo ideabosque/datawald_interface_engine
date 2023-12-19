@@ -8,6 +8,12 @@ import uuid, boto3, traceback, copy, time, math
 from datetime import datetime, timedelta
 from deepdiff import DeepDiff
 from silvaengine_utility import Utility
+from silvaengine_dynamodb_base import (
+    monitor_decorator,
+    insert_update_decorator,
+    resolve_list_decorator,
+    delete_decorator,
+)
 from .models import TxStagingModel, SyncTaskModel, ProductMetadataModel
 from .types import (
     CutDateType,
@@ -16,12 +22,14 @@ from .types import (
     ProductMetadataType,
     DataFeedEntityType,
     SyncTaskListType,
-    TxStagingsType,
+    TxStagingListType,
+    ProductMetadataListType,
 )
 from tenacity import retry, wait_exponential, stop_after_attempt
 from pytz import timezone
 from dynamodb_connector import DynamoDBConnector
 
+data_attributes_except_for_data_diff = ["created_at", "updated_at"]
 sqs = None
 aws_lambda = None
 dynamodbconnector = None
@@ -70,60 +78,9 @@ def handlers_init(logger, **setting):
     sync_task_notification = setting.get("sync_task_notification", {})
     sync_statuses = setting.get(
         # "sync_statuses", ["Completed", "Fail", "Incompleted", "Processing"]
-        "sync_statuses", ["Completed"]
+        "sync_statuses",
+        ["Completed"],
     )
-
-
-def results_pagination(
-    info,
-    query_scan,
-    total,
-    limit,
-    page_number,
-    args,
-    attributes_to_get,
-    scan_index_forward,
-):
-    last_evaluated_key = None
-
-    info.context.get("logger").info(f"Locate page started at {time.strftime('%X')}")
-    if page_number > 1 and page_number <= math.ceil(total / limit):
-        kwargs = {"attributes_to_get": attributes_to_get}
-        if scan_index_forward is not None:
-            kwargs.update({"scan_index_forward": scan_index_forward})
-        results = query_scan(
-            *args,
-            **kwargs,
-        )
-        entities = []
-        for i, entity in enumerate(results):
-            entities.append(entity)
-            if i + 1 == (page_number - 1) * limit:
-                break
-
-        last_evaluated_key = results.last_evaluated_key
-
-    info.context.get("logger").info(f"Locate page finished at {time.strftime('%X')}")
-
-    if page_number <= math.ceil(total / limit):
-        kwargs = {"last_evaluated_key": last_evaluated_key}
-        if scan_index_forward is not None:
-            kwargs.update({"scan_index_forward": scan_index_forward})
-        results = query_scan(
-            *args,
-            **kwargs,
-        )
-    else:
-        return []
-
-    entities = []
-    for i, entity in enumerate(results):
-        entities.append(entity)
-        if i + 1 == limit:
-            break
-
-    info.context.get("logger").info(f"Load page at {time.strftime('%X')}")
-    return entities
 
 
 @retry(
@@ -132,7 +89,11 @@ def results_pagination(
     stop=stop_after_attempt(5),
 )
 def get_tx_staging(source_target, tx_type_src_id):
-    tx_staging = TxStagingModel.get(source_target, tx_type_src_id).__dict__[
+    return TxStagingModel.get(source_target, tx_type_src_id)
+
+
+def _get_tx_staging(source_target, tx_type_src_id):
+    tx_staging = get_tx_staging(source_target, tx_type_src_id).__dict__[
         "attribute_values"
     ]
     source_target = tx_staging.pop("source_target")
@@ -145,243 +106,58 @@ def get_tx_staging(source_target, tx_type_src_id):
     )
 
 
-@retry(
-    reraise=True,
-    wait=wait_exponential(multiplier=1, max=60),
-    stop=stop_after_attempt(5),
-)
-def get_sync_task(tx_type, id):
-    return SyncTaskModel.get(tx_type, id)
+def get_tx_staging_count(source_target, tx_type_src_id):
+    return TxStagingModel.count(
+        source_target, TxStagingModel.tx_type_src_id == tx_type_src_id
+    )
+
+
+def get_tx_staging_type(info, tx_staging):
+    tx_staging = tx_staging.__dict__["attribute_values"]
+    source_target = tx_staging.pop("source_target")
+    tx_staging = dict(
+        {
+            "source": source_target.split("_")[0],
+            "target": source_target.split("_")[1],
+        },
+        **tx_staging,
+    )
+    return TxStagingType(**Utility.json_loads(Utility.json_dumps(tx_staging)))
 
 
 def resolve_tx_staging_handler(info, **kwargs):
-    return TxStagingType(
-        **Utility.json_loads(
-            Utility.json_dumps(
-                get_tx_staging(
-                    f"{kwargs.get('source')}_{kwargs.get('target')}",
-                    kwargs.get("tx_type_src_id"),
-                )
-            )
-        )
-    )
-
-
-def get_tx_stagings(
-    info,
-    query_scan_string,
-    total,
-    limit,
-    page_number,
-    args,
-    attributes_to_get,
-    scan_index_forward=None,
-):
-    entities = results_pagination(
+    return get_tx_staging_type(
         info,
-        query_scan_string,
-        total,
-        limit,
-        page_number,
-        args,
-        attributes_to_get,
-        scan_index_forward,
-    )
-    return TxStagingsType(
-        tx_stagings=[
-            TxStagingType(
-                source=tx_staging.source_target.split("_")[0],
-                tx_type_src_id=tx_staging.tx_type_src_id,
-                target=tx_staging.source_target.split("_")[1],
-                tgt_id=tx_staging.tgt_id,
-                data=tx_staging.data.__dict__["attribute_values"],
-                old_data=tx_staging.old_data.__dict__["attribute_values"],
-                created_at=tx_staging.created_at,
-                updated_at=tx_staging.updated_at,
-                tx_note=tx_staging.tx_note,
-                tx_status=tx_staging.tx_status,
-            )
-            for tx_staging in entities
-        ],
-        page_size=limit,
-        page_number=page_number,
-        total=total,
+        get_tx_staging(
+            f"{kwargs.get('source')}_{kwargs.get('target')}",
+            kwargs.get("tx_type_src_id"),
+        ),
     )
 
 
-def resolve_tx_stagings_handler(info, **kwargs):
-    page_number = kwargs.get("page_number", 1)
-    limit = kwargs.get("limit", 100)
-    source = kwargs.get("source")
-    target = kwargs.get("target")
+@monitor_decorator
+@resolve_list_decorator(
+    attributes_to_get=["source_target", "tx_type_src_id"],
+    list_type_class=TxStagingListType,
+    type_funct=get_tx_staging_type,
+)
+def resolve_tx_staging_list_handler(info, **kwargs):
+    source_target = f"{kwargs.get('source')}_{kwargs.get('target')}"  ## PK
 
-    args = [f"{source}_{target}"]
-    if kwargs.get("tx_type"):
-        args.append(TxStagingModel.tx_type_src_id.startswith(kwargs.get("tx_type")))
+    ## Set up the query arguments with key condition expression.
+    args = []
+    inquiry_funct = TxStagingModel.scan
+    count_funct = TxStagingModel.count
+    if source_target:
+        args = [source_target, None]
+        inquiry_funct = TxStagingModel.query
 
-    the_filters = []  # We can add filters for the query.
-    if len(the_filters) > 0:
-        args.append(eval(" & ".join(the_filters)))
+    ## Set up the query arguments with filter expression.
+    the_filters = None  # We can add filters for the query.
+    if the_filters is not None:
+        args.append(the_filters)
 
-    total = TxStagingModel.count(*args)
-    info.context.get("logger").info(
-        f"Retrieve total ({total}) at {time.strftime('%X')}"
-    )
-    return get_tx_stagings(
-        info,
-        TxStagingModel.query,
-        total,
-        limit,
-        page_number,
-        args,
-        ["source_target", "tx_type_src_id"],
-    )
-
-
-def resolve_cut_date_handler(info, **kwargs):
-    cut_date = datetime.strptime(default_cut_date, "%Y-%m-%dT%H:%M:%S%z")
-    offset = 0
-    sync_tasks = [
-        sync_task
-        for sync_task in SyncTaskModel.tx_type_source_index.query(
-            kwargs.get("tx_type"),
-            SyncTaskModel.source == kwargs.get("source"),
-            (SyncTaskModel.target == kwargs.get("target"))
-            & (SyncTaskModel.sync_status.is_in(*sync_statuses)),
-        )
-    ]
-
-    if len(sync_tasks) > 0:
-        last_sync_task = max(
-            sync_tasks,
-            key=lambda sync_task: (sync_task.cut_date, int(sync_task.offset)),
-        )
-        id = last_sync_task.id
-        cut_date = last_sync_task.cut_date
-        offset = int(last_sync_task.offset)
-
-        # Flsuh Sync Task Table by souce and tx_type.
-        flush_sync_task(
-            kwargs.get("tx_type"), kwargs.get("source"), kwargs.get("target"), id
-        )
-    return CutDateType(cut_date=cut_date, offset=offset)
-
-
-def flush_sync_task(tx_type, source, target, id):
-    for sync_task in SyncTaskModel.tx_type_source_index.query(
-        tx_type,
-        SyncTaskModel.source == source,
-        (SyncTaskModel.target == target) & (SyncTaskModel.id != id),
-    ):
-        if sync_task.sync_status in sync_statuses:
-            sync_task.delete(SyncTaskModel.id != id)
-
-
-def resolve_sync_task_handler(info, **kwargs):
-    return SyncTaskType(
-        **Utility.json_loads(
-            Utility.json_dumps(
-                get_sync_task(kwargs.get("tx_type"), kwargs.get("id")).__dict__[
-                    "attribute_values"
-                ]
-            )
-        )
-    )
-
-
-def get_sync_task_list(
-    info,
-    query_scan_string,
-    total,
-    limit,
-    page_number,
-    args,
-    attributes_to_get,
-    scan_index_forward=None,
-):
-    entities = results_pagination(
-        info,
-        query_scan_string,
-        total,
-        limit,
-        page_number,
-        args,
-        attributes_to_get,
-        scan_index_forward,
-    )
-    return SyncTaskListType(
-        sync_task_list=[
-            SyncTaskType(**sync_task.__dict__["attribute_values"])
-            for sync_task in entities
-        ],
-        page_size=limit,
-        page_number=page_number,
-        total=total,
-    )
-
-
-def resolve_sync_task_list_handler(info, **kwargs):
-    page_number = kwargs.get("page_number", 1)
-    limit = kwargs.get("limit", 100)
-
-    args = [kwargs.get("tx_type"), SyncTaskModel.source == kwargs.get("source")]
-
-    the_filters = []  # We can add filters for the query.
-    if len(the_filters) > 0:
-        args.append(eval(" & ".join(the_filters)))
-
-    total = SyncTaskModel.count(*args)
-    info.context.get("logger").info(
-        f"Retrieve total ({total}) at {time.strftime('%X')}"
-    )
-    return get_sync_task_list(
-        info,
-        SyncTaskModel.tx_type_source_index.query,
-        total,
-        limit,
-        page_number,
-        args,
-        ["tx_type", "source"],
-    )
-
-
-def resolve_sync_tasks_handler(info, **kwargs):
-    tx_type = kwargs.get("tx_type")
-    source = kwargs.get("source")
-    end_date_from = kwargs.get("end_date_from")
-    end_date_to = kwargs.get("end_date_to")
-    sync_statuses = kwargs.get("sync_statuses")
-    id = kwargs.get("id")
-
-    current = datetime.now(tz=timezone(default_timezone))
-    deadline = end_date_from + timedelta(hours=deadline_hours)
-    if end_date_to:
-        end_date_to = min(current, deadline, end_date_to)
-    else:
-        end_date_to = min(current, deadline)
-
-    args = [
-        tx_type,
-        SyncTaskModel.source == source,
-    ]
-
-    filters = ["SyncTaskModel.end_date.between(end_date_from, end_date_to)"]
-    if sync_statuses:
-        filters.append("SyncTaskModel.sync_status.is_in(*sync_statuses)")
-    if id:
-        filters.append("SyncTaskModel.id.startswith(id)")
-
-    args = args + [eval(" & ".join(filters))]
-    results = SyncTaskModel.tx_type_source_index.query(*args)
-    entities = [entity for entity in results]
-    return [
-        SyncTaskType(
-            **Utility.json_loads(
-                Utility.json_dumps(entity.__dict__["attribute_values"])
-            )
-        )
-        for entity in entities
-    ]
+    return inquiry_funct, count_funct, args
 
 
 def insert_tx_staging_handler(info, **kwargs):
@@ -441,15 +217,12 @@ def insert_tx_staging_handler(info, **kwargs):
             ),
         ).save()
 
-    return TxStagingType(
-        **Utility.json_loads(
-            Utility.json_dumps(
-                get_tx_staging(
-                    f"{kwargs.get('source')}_{kwargs.get('target')}",
-                    kwargs.get("tx_type_src_id"),
-                )
-            )
-        )
+    return get_tx_staging_type(
+        info,
+        get_tx_staging(
+            f"{kwargs.get('source')}_{kwargs.get('target')}",
+            kwargs.get("tx_type_src_id"),
+        ),
     )
 
 
@@ -474,40 +247,209 @@ def delete_tx_staging_handler(info, **kwargs):
     return True
 
 
-def insert_sync_task_handler(info, **kwargs):
-    id = str(uuid.uuid1().int >> 64)
-    if kwargs.get("id"):
-        id = kwargs.get("id")
-    SyncTaskModel(
-        kwargs.get("tx_type"),
-        id,
-        **{
-            "source": kwargs.get("source"),
-            "target": kwargs.get("target"),
-            "cut_date": kwargs.get("cut_date"),
-            "start_date": datetime.now(tz=timezone("UTC")),
-            "end_date": datetime.now(tz=timezone("UTC")),
-            "offset": kwargs.get("offset", 0),
-            "sync_note": f"Process {kwargs.get('tx_type')} data for source ({kwargs.get('source')}).",
-            "sync_status": "Processing",
-            "entities": kwargs.get("entities"),
-        },
-    ).save()
+@retry(
+    reraise=True,
+    wait=wait_exponential(multiplier=1, max=60),
+    stop=stop_after_attempt(5),
+)
+def get_sync_task(tx_type, id):
+    return SyncTaskModel.get(tx_type, id)
 
-    sync_task_model = get_sync_task(kwargs.get("tx_type"), id)
-    dispatch_sync_task(
-        info.context.get("logger"),
-        kwargs.get("tx_type"),
-        id,
-        kwargs.get("target"),
-        kwargs.get("funct"),
-        copy.deepcopy(sync_task_model.entities),
-    )
+
+def _get_sync_task(tx_type, id):
+    sync_task = get_sync_task(tx_type, id)
+    return sync_task.__dict__["attribute_values"]
+
+
+def get_sync_task_count(tx_type, id):
+    return SyncTaskModel.count(tx_type, SyncTaskModel.id == id)
+
+
+def get_sync_task_type(info, sync_task):
     return SyncTaskType(
-        **Utility.json_loads(
-            Utility.json_dumps(sync_task_model.__dict__["attribute_values"])
-        )
+        **Utility.json_loads(Utility.json_dumps(sync_task.__dict__["attribute_values"]))
     )
+
+
+def resolve_sync_task_handler(info, **kwargs):
+    return get_sync_task_type(
+        info, get_sync_task(kwargs.get("tx_type"), kwargs.get("id"))
+    )
+
+
+def resolve_cut_date_handler(info, **kwargs):
+    cut_date = datetime.strptime(default_cut_date, "%Y-%m-%dT%H:%M:%S%z")
+    offset = 0
+    sync_tasks = [
+        sync_task
+        for sync_task in SyncTaskModel.tx_type_source_index.query(
+            kwargs.get("tx_type"),
+            SyncTaskModel.source == kwargs.get("source"),
+            (SyncTaskModel.target == kwargs.get("target"))
+            & (SyncTaskModel.sync_status.is_in(*sync_statuses)),
+        )
+    ]
+
+    if len(sync_tasks) > 0:
+        last_sync_task = max(
+            sync_tasks,
+            key=lambda sync_task: (sync_task.cut_date, int(sync_task.offset)),
+        )
+        id = last_sync_task.id
+        cut_date = last_sync_task.cut_date
+        offset = int(last_sync_task.offset)
+
+        # Flsuh Sync Task Table by souce and tx_type.
+        flush_sync_task(
+            kwargs.get("tx_type"), kwargs.get("source"), kwargs.get("target"), id
+        )
+    return CutDateType(cut_date=cut_date, offset=offset)
+
+
+def flush_sync_task(tx_type, source, target, id):
+    for sync_task in SyncTaskModel.tx_type_source_index.query(
+        tx_type,
+        SyncTaskModel.source == source,
+        (SyncTaskModel.target == target) & (SyncTaskModel.id != id),
+    ):
+        if sync_task.sync_status in sync_statuses:
+            sync_task.delete(SyncTaskModel.id != id)
+
+
+@monitor_decorator
+@resolve_list_decorator(
+    attributes_to_get=["tx_type", "id"],
+    list_type_class=SyncTaskListType,
+    type_funct=get_sync_task_type,
+)
+def resolve_sync_task_list_handler(info, **kwargs):
+    tx_type = kwargs.get("tx_type")  ## PK
+    source = kwargs.get("source")  ## LSK
+    end_date_from = kwargs.get("end_date_from")
+    sync_statuses = kwargs.get("sync_statuses")
+    id = kwargs.get("id")
+
+    ## Set up the query arguments with key condition expression.
+    args = []
+    inquiry_funct = SyncTaskModel.scan
+    count_funct = SyncTaskModel.count
+    if tx_type:
+        args = [tx_type, None]
+        inquiry_funct = SyncTaskModel.query
+        if source:
+            args[1] = SyncTaskModel.source == source
+            inquiry_funct = SyncTaskModel.tx_type_source_index.query
+            count_funct = SyncTaskModel.tx_type_source_index.count
+
+    ## Set up the query arguments with filter expression.
+    the_filters = None  # We can add filters for the query.
+    if end_date_from:
+        current = datetime.now(tz=timezone(default_timezone))
+        deadline = end_date_from + timedelta(hours=deadline_hours)
+        end_date_to = min(current, deadline)
+        if kwargs.get("end_date_to"):
+            end_date_to = min(current, deadline, kwargs.get("end_date_to"))
+        the_filters &= SyncTaskModel.end_date.between(end_date_from, end_date_to)
+    if sync_statuses:
+        the_filters &= SyncTaskModel.sync_status.is_in(*sync_statuses)
+    if id:
+        the_filters &= SyncTaskModel.id.startswith(id)
+    if the_filters is not None:
+        args.append(the_filters)
+
+    return inquiry_funct, count_funct, args
+
+
+@insert_update_decorator(
+    keys={
+        "hash_key": "tx_type",
+        "range_key": "id",
+    },
+    model_funct=get_sync_task,
+    count_funct=get_sync_task_count,
+    type_funct=get_sync_task_type,
+    data_attributes_except_for_data_diff=data_attributes_except_for_data_diff,
+    activity_history_funct=None,
+)
+def insert_update_sync_task_handler(info, **kwargs):
+    tx_type = kwargs.get("tx_type")
+    id = kwargs.get("id")
+    if kwargs.get("entity") is None:
+        SyncTaskModel(
+            tx_type,
+            id,
+            **{
+                "source": kwargs.get("source"),
+                "target": kwargs.get("target"),
+                "cut_date": kwargs.get("cut_date"),
+                "start_date": datetime.now(tz=timezone("UTC")),
+                "end_date": datetime.now(tz=timezone("UTC")),
+                "offset": kwargs.get("offset", 0),
+                "sync_note": f"Process {kwargs.get('tx_type')} data for source ({kwargs.get('source')}).",
+                "sync_status": "Processing",
+                "entities": kwargs.get("entities"),
+            },
+        ).save()
+
+        sync_task = get_sync_task(tx_type, id)
+        dispatch_sync_task(
+            info.context.get("logger"),
+            tx_type,
+            id,
+            kwargs.get("target"),
+            kwargs.get("funct"),
+            copy.deepcopy(sync_task.entities),
+        )
+        return
+
+    sync_task = kwargs.get("entity")
+    entities = kwargs.get("entities")
+    sync_status = "Completed"
+    if len(list(filter(lambda x: x["tx_status"] == "F", entities))) > 0:
+        sync_status = "Fail"
+    if len(list(filter(lambda x: x["tx_status"] == "?", entities))) > 0:
+        sync_status = "Incompleted"
+
+    sync_task.update(
+        actions=[
+            SyncTaskModel.sync_status.set(sync_status),
+            SyncTaskModel.end_date.set(datetime.now(tz=timezone("UTC"))),
+            SyncTaskModel.entities.set(entities),
+        ]
+    )
+
+    # Send out the notification if the sync_task is completed.
+    if (
+        sync_task_notification.get(sync_task.target)
+        and sync_task_notification[sync_task.target].get(tx_type)
+        and sync_status != "Incompleted"
+    ):
+        endpoint_id = sync_task.target
+        funct = sync_task_notification[sync_task.target][tx_type]
+        task_queue.send_message(
+            MessageAttributes={
+                "endpoint_id": {"StringValue": endpoint_id, "DataType": "String"},
+                "funct": {"StringValue": funct, "DataType": "String"},
+            },
+            MessageBody=Utility.json_dumps(
+                {"params": sync_task.__dict__["attribute_values"]}
+            ),
+            MessageGroupId=f"{tx_type}-{id}",
+        )
+
+    return
+
+
+@delete_decorator(
+    keys={
+        "hash_key": "tx_type",
+        "range_key": "id",
+    },
+    model_funct=get_sync_task,
+)
+def delete_sync_task_handler(info, **kwargs):
+    kwargs.get("entity").delete()
+    return True
 
 
 def dispatch_sync_task(logger, tx_type, id, target, funct, entities):
@@ -568,100 +510,125 @@ def dispatch_sync_task(logger, tx_type, id, target, funct, entities):
         raise
 
 
-def update_sync_task_handler(info, **kwargs):
-    entities = kwargs.get("entities")
+def retry_sync_task_handler(info, **kwargs):
+    source = kwargs.get("source")
     tx_type = kwargs.get("tx_type")
     id = kwargs.get("id")
+    message_group_id = f"resync_{tx_type}_{source}_{id}"
+    params = {
+        "tx_type": tx_type,
+        "id": id,
+    }
+    if kwargs.get("funct"):
+        params.update({"funct": kwargs.get("funct")})
 
-    sync_status = "Completed"
-    if len(list(filter(lambda x: x["tx_status"] == "F", entities))) > 0:
-        sync_status = "Fail"
-    if len(list(filter(lambda x: x["tx_status"] == "?", entities))) > 0:
-        sync_status = "Incompleted"
-
-    sync_task_model = SyncTaskModel.get(tx_type, id)
-    sync_task_model.update(
-        actions=[
-            SyncTaskModel.sync_status.set(sync_status),
-            SyncTaskModel.end_date.set(datetime.now(tz=timezone("UTC"))),
-            SyncTaskModel.entities.set(entities),
-        ]
+    input_queue.send_message(
+        MessageAttributes={
+            "endpoint_id": {"StringValue": source, "DataType": "String"},
+            "funct": {"StringValue": "retry_sync_task", "DataType": "String"},
+        },
+        MessageBody=Utility.json_dumps({"params": params}),
+        MessageGroupId=message_group_id,
     )
+    return message_group_id
 
-    # Send out the notification if the sync_task is completed.
-    if (
-        sync_task_notification.get(sync_task_model.target)
-        and sync_task_notification[sync_task_model.target].get(tx_type)
-        and sync_status != "Incompleted"
-    ):
-        endpoint_id = sync_task_model.target
-        funct = sync_task_notification[sync_task_model.target][tx_type]
-        task_queue.send_message(
-            MessageAttributes={
-                "endpoint_id": {"StringValue": endpoint_id, "DataType": "String"},
-                "funct": {"StringValue": funct, "DataType": "String"},
-            },
-            MessageBody=Utility.json_dumps(
-                {"params": sync_task_model.__dict__["attribute_values"]}
-            ),
-            MessageGroupId=f"{tx_type}-{id}",
-        )
 
-    return SyncTaskType(
-        **Utility.json_loads(
-            Utility.json_dumps(sync_task_model.__dict__["attribute_values"])
-        )
+@retry(
+    reraise=True,
+    wait=wait_exponential(multiplier=1, max=60),
+    stop=stop_after_attempt(5),
+)
+def get_product_metadata(target_source, column):
+    return ProductMetadataModel.get(target_source, column)
+
+
+def _get_product_metadata(target_source, column):
+    product_metadata = get_product_metadata(target_source, column)
+    return product_metadata.__dict__["attribute_values"]
+
+
+def get_product_metadata_count(target_source, column):
+    return ProductMetadataModel.count(
+        target_source, ProductMetadataModel.column == column
     )
 
 
-def delete_sync_task_handler(info, **kwargs):
-    SyncTaskModel.get(kwargs.get("tx_type"), kwargs.get("id")).delete()
-    return True
-
-
-def resolve_product_metadatas_handle(info, **kwargs):
-    results = ProductMetadataModel.query(kwargs.get("target_source"))
-    return [
-        ProductMetadataType(
-            **Utility.json_loads(
-                Utility.json_dumps(entity.__dict__["attribute_values"])
-            )
-        )
-        for entity in results
-    ]
-
-
-def insert_product_metadata_handler(info, **kwargs):
-    ProductMetadataModel(
-        kwargs.get("target_source"),
-        kwargs.get("column"),
-        **Utility.json_loads(
-            Utility.json_dumps(
-                {
-                    "metadata": kwargs.get("metadata"),
-                    "created_at": datetime.now(tz=timezone("UTC")),
-                    "updated_at": datetime.now(tz=timezone("UTC")),
-                }
-            ),
-            parser_number=False,
-        ),
-    ).save()
-
-    product_metadata_model = ProductMetadataModel.get(
-        kwargs.get("target_source"), kwargs.get("column")
-    )
+def get_product_metadata_type(info, product_metadata):
     return ProductMetadataType(
         **Utility.json_loads(
-            Utility.json_dumps(product_metadata_model.__dict__["attribute_values"])
+            Utility.json_dumps(product_metadata.__dict__["attribute_values"])
         )
     )
 
 
-def update_product_metadata_handler(info, **kwargs):
-    product_metadata_model = ProductMetadataModel.get(
-        kwargs.get("target_source"), kwargs.get("column")
+def resolve_product_metadata_handler(info, **kwargs):
+    return get_product_metadata_type(
+        info, get_product_metadata(kwargs.get("target_source"), kwargs.get("column"))
     )
-    product_metadata_model.update(
+
+
+@monitor_decorator
+@resolve_list_decorator(
+    attributes_to_get=["target_source", "column"],
+    list_type_class=ProductMetadataListType,
+    type_funct=get_product_metadata_type,
+)
+def resolve_product_metadata_list_handler(info, **kwargs):
+    target_source = kwargs.get("target_source")  ## PK
+    column = kwargs.get("column")  ## SK
+    columns = kwargs.get("columns")  ## SK
+
+    ## Set up the query arguments with key condition expression.
+    args = []
+    inquiry_funct = ProductMetadataModel.scan
+    count_funct = ProductMetadataModel.count
+    if target_source:
+        args = [target_source, None]
+        inquiry_funct = ProductMetadataModel.query
+
+    ## Set up the query arguments with filter expression.
+    the_filters = None  # We can add filters for the query.
+    if column:
+        the_filters &= ProductMetadataModel.column.contains(column)
+    if columns:
+        the_filters &= ProductMetadataModel.column.is_in(*columns)
+    if the_filters is not None:
+        args.append(the_filters)
+
+    return inquiry_funct, count_funct, args
+
+
+@insert_update_decorator(
+    keys={
+        "hash_key": "target_source",
+        "range_key": "column",
+    },
+    range_key_required=True,
+    model_funct=get_product_metadata,
+    count_funct=get_product_metadata_count,
+    type_funct=get_product_metadata_type,
+    data_attributes_except_for_data_diff=data_attributes_except_for_data_diff,
+    activity_history_funct=None,
+)
+def insert_update_product_metadata_handler(info, **kwargs):
+    target_source = kwargs.get("target_source")
+    column = kwargs.get("column")
+    if kwargs.get("entity") is None:
+        ProductMetadataModel(
+            target_source,
+            column,
+            **{
+                "metadata": Utility.json_loads(
+                    Utility.json_dumps(kwargs.get("metadata")), parser_number=False
+                ),
+                "created_at": datetime.now(tz=timezone("UTC")),
+                "updated_at": datetime.now(tz=timezone("UTC")),
+            },
+        ).save()
+        return
+
+    product_metadata = kwargs.get("entity")
+    product_metadata.update(
         actions=[
             ProductMetadataModel.metadata.set(
                 Utility.json_loads(
@@ -671,16 +638,18 @@ def update_product_metadata_handler(info, **kwargs):
             ProductMetadataModel.updated_at.set(datetime.now(tz=timezone("UTC"))),
         ]
     )
-
-    return ProductMetadataType(
-        **Utility.json_loads(
-            Utility.json_dumps(product_metadata_model.__dict__["attribute_values"])
-        )
-    )
+    return
 
 
+@delete_decorator(
+    keys={
+        "hash_key": "target_source",
+        "range_key": "column",
+    },
+    model_funct=get_product_metadata,
+)
 def delete_product_metadata_handler(info, **kwargs):
-    ProductMetadataModel.get(kwargs.get("target_source"), kwargs.get("column")).delete()
+    kwargs.get("entity").delete()
     return True
 
 
@@ -709,29 +678,6 @@ def put_messages_handler(info, **kwargs):
                 }
             }
         ),
-        MessageGroupId=message_group_id,
-    )
-    return message_group_id
-
-
-def retry_sync_task_handler(info, **kwargs):
-    source = kwargs.get("source")
-    tx_type = kwargs.get("tx_type")
-    id = kwargs.get("id")
-    message_group_id = f"resync_{tx_type}_{source}_{id}"
-    params = {
-        "tx_type": tx_type,
-        "id": id,
-    }
-    if kwargs.get("funct"):
-        params.update({"funct": kwargs.get("funct")})
-
-    input_queue.send_message(
-        MessageAttributes={
-            "endpoint_id": {"StringValue": source, "DataType": "String"},
-            "funct": {"StringValue": "retry_sync_task", "DataType": "String"},
-        },
-        MessageBody=Utility.json_dumps({"params": params}),
         MessageGroupId=message_group_id,
     )
     return message_group_id
