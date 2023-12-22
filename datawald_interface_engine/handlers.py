@@ -365,6 +365,7 @@ def resolve_sync_task_list_handler(info, **kwargs):
         "hash_key": "tx_type",
         "range_key": "id",
     },
+    range_key_required=True,
     model_funct=get_sync_task,
     count_funct=get_sync_task_count,
     type_funct=get_sync_task_type,
