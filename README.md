@@ -34,36 +34,36 @@ This layered and modular workflow ensures seamless data integration and synchron
 
 **Core Modules**
 
-- [**datawald_interface_engine**](https://github.com/ideabosque/datawald_interface_engine):** Serves as the central engine that orchestrates the entire data management framework.
-- [**datawald_agency**](https://github.com/ideabosque/datawald_agency):** Provides an abstract layer for system-specific modules, enabling streamlined data integration across different platforms.
-- [**datawald_connector**](https://github.com/ideabosque/datawald_connector):** Acts as a bridge between the datawald_interface_engine and external dataflows, facilitating seamless data communication.
+- [**datawald_interface_engine**](https://github.com/ideabosque/datawald_interface_engine): Serves as the central engine that orchestrates the entire data management framework.
+- [**datawald_agency**](https://github.com/ideabosque/datawald_agency): Provides an abstract layer for system-specific modules, enabling streamlined data integration across different platforms.
+- [**datawald_connector**](https://github.com/ideabosque/datawald_connector): Acts as a bridge between the datawald_interface_engine and external dataflows, facilitating seamless data communication.
 
 **NetSuite Integration**
 
-- [**datawald_nsagency**](https://github.com/ideabosque/datawald_nsagency):** Processes NetSuite data, applying tailored business logic to meet operational requirements.
-- [**suitetalk_connector**](https://github.com/ideabosque/suitetalk_connector):** Communicates with NetSuite via SOAP and RESTful protocols to ensure effective data exchange.
+- [**datawald_nsagency**](https://github.com/ideabosque/datawald_nsagency): Processes NetSuite data, applying tailored business logic to meet operational requirements.
+- [**suitetalk_connector**](https://github.com/ideabosque/suitetalk_connector): Communicates with NetSuite via SOAP and RESTful protocols to ensure effective data exchange.
 
 **Magento 2 Integration**
 
-- [**datawald_mage2agency**](https://github.com/ideabosque/datawald_dynamodbagency):** Manages and processes data for Magento 2, embedding business logic to support e-commerce functions.
-- [**mage2_connector**](https://github.com/ideabosque/mage2_connector):** Connects to Magento 2 to enable efficient data transactions and synchronization.
+- [**datawald_mage2agency**](https://github.com/ideabosque/datawald_dynamodbagency): Manages and processes data for Magento 2, embedding business logic to support e-commerce functions.
+- [**mage2_connector**](https://github.com/ideabosque/mage2_connector): Connects to Magento 2 to enable efficient data transactions and synchronization.
 
 **HubSpot Integration**
 
-- [**datawald_hubspotagency**](https://github.com/ideabosque/datawald_hubspotagency):** Processes and manages HubSpot data, integrating specific business logic for customer relationship workflows.
-- [**hubspot_connector**](https://github.com/ideabosque/hubspot_connector):** Facilitates communication with HubSpot, enabling seamless data integration and CRM functionality.
+- [**datawald_hubspotagency**](https://github.com/ideabosque/datawald_hubspotagency): Processes and manages HubSpot data, integrating specific business logic for customer relationship workflows.
+- [**hubspot_connector**](https://github.com/ideabosque/hubspot_connector): Facilitates communication with HubSpot, enabling seamless data integration and CRM functionality.
 
 **AWS DynamoDB Integration**
 
-- [**datawald_dynamodbagency**](https://github.com/ideabosque/datawald_dynamodbagency):** Tailors and processes data with business-specific logic for DynamoDB, supporting database interactions.
-- [**dynamodb_connector**](https://github.com/ideabosque/datawald_connector):** Connects with AWS DynamoDB to execute efficient data transactions within the framework.
+- [**datawald_dynamodbagency**](https://github.com/ideabosque/datawald_dynamodbagency): Tailors and processes data with business-specific logic for DynamoDB, supporting database interactions.
+- [**dynamodb_connector**](https://github.com/ideabosque/datawald_connector): Connects with AWS DynamoDB to execute efficient data transactions within the framework.
 
 **AWS SQS Integration**
 
-- [**datawald_sqsagency**](https://github.com/ideabosque/datawald_sqsagency):** Processes messages from AWS SQS, embedding business rules to handle message flow effectively.
-- [**sqs_connector**](https://github.com/ideabosque/sqs_connector):** Manages connections with AWS SQS to enable message handling and integration within the framework.
+- [**datawald_sqsagency**](https://github.com/ideabosque/datawald_sqsagency): Processes messages from AWS SQS, embedding business rules to handle message flow effectively.
+- [**sqs_connector**](https://github.com/ideabosque/sqs_connector): Manages connections with AWS SQS to enable message handling and integration within the framework.
 
 **AWS S3 Integration**
 
-- [**datawald_s3agency**](https://github.com/ideabosque/datawald_s3agency):** Applies business logic to process and manage data for storage and retrieval in AWS S3.
-- [**s3_connector**](https://github.com/ideabosque/s3_connector):** Connects with AWS S3 to facilitate file management and data storage operations within the DataWald ecosystem.
+- [**datawald_s3agency**](https://github.com/ideabosque/datawald_s3agency): Applies business logic to process and manage data for storage and retrieval in AWS S3.
+- [**s3_connector**](https://github.com/ideabosque/s3_connector): Connects with AWS S3 to facilitate file management and data storage operations within the DataWald ecosystem.
