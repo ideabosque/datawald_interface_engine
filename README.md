@@ -1,7 +1,7 @@
 # DataWald Interface Engine
 Serves as the central engine that orchestrates the entire data management framework.
 
-### Configuration
+**Configuration Setup**
 Insert the following records into the `se-configdata` DynamoDB table:
 
 ```bash
@@ -36,8 +36,7 @@ Insert the following records into the `se-configdata` DynamoDB table:
 }
 ```
 
-**configuration Details:**
-
+**Configuration Details:**
 - **default_cut_date**: The default cut-off date for data synchronization.
 - **input_queue_name**: Specifies the SQS queue designated for `SQSAgency` and `SQSConnector` to receive incoming messages.
 - **max_entities_in_message_body**: Defines the maximum number of entities allowed in the message body when sending data via `task_queue`.
