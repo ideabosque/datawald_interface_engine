@@ -1,7 +1,7 @@
 # DataWald Interface Engine
 Serves as the central engine that orchestrates the entire data management framework.
 
-**Configuration Setup**
+### Configuration Setup
 
 Insert the following records into the `se-configdata` DynamoDB table:
 
@@ -37,7 +37,7 @@ Insert the following records into the `se-configdata` DynamoDB table:
 }
 ```
 
-**Configuration Details:**
+### Configuration Details
 
 - **default_cut_date**: The default cut-off date for data synchronization.
 - **input_queue_name**: Specifies the SQS queue designated for `SQSAgency` and `SQSConnector` to receive incoming messages.
