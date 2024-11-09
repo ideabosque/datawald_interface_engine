@@ -5,7 +5,7 @@ Serves as the central engine that orchestrates the entire data management framew
 
 Insert the following records into the `se-configdata` DynamoDB table:
 
-```bash
+```json
 {
     "setting_id": "datawald_interface_engine",
     "variable": "default_cut_date",
