@@ -4,30 +4,38 @@ from __future__ import print_function
 
 __author__ = "bibow"
 
-import uuid, boto3, traceback, copy, time, math
+import copy
+import math
+import time
+import traceback
+import uuid
 from datetime import datetime, timedelta
+
+import boto3
 from deepdiff import DeepDiff
-from silvaengine_utility import Utility
+from pytz import timezone
+from tenacity import retry, stop_after_attempt, wait_exponential
+
+from dynamodb_connector import DynamoDBConnector
 from silvaengine_dynamodb_base import (
-    monitor_decorator,
-    insert_update_decorator,
-    resolve_list_decorator,
     delete_decorator,
+    insert_update_decorator,
+    monitor_decorator,
+    resolve_list_decorator,
 )
-from .models import TxStagingModel, SyncTaskModel, ProductMetadataModel
+from silvaengine_utility import Utility
+
+from .models import ProductMetadataModel, SyncTaskModel, TxStagingModel
 from .types import (
     CutDateType,
-    SyncTaskType,
-    TxStagingType,
-    ProductMetadataType,
     DataFeedEntityType,
-    SyncTaskListType,
-    TxStagingListType,
     ProductMetadataListType,
+    ProductMetadataType,
+    SyncTaskListType,
+    SyncTaskType,
+    TxStagingListType,
+    TxStagingType,
 )
-from tenacity import retry, wait_exponential, stop_after_attempt
-from pytz import timezone
-from dynamodb_connector import DynamoDBConnector
 
 data_attributes_except_for_data_diff = ["created_at", "updated_at"]
 sqs = None
@@ -427,15 +435,16 @@ def insert_update_sync_task_handler(info, **kwargs):
     ):
         endpoint_id = sync_task.target
         funct = sync_task_notification[sync_task.target][tx_type]
-        task_queue.send_message(
-            MessageAttributes={
-                "endpoint_id": {"StringValue": endpoint_id, "DataType": "String"},
-                "funct": {"StringValue": funct, "DataType": "String"},
+
+        Utility.invoke_funct_on_aws_sqs(
+            info.context.get("logger"),
+            task_queue,
+            f"{tx_type}-{id}",
+            **{
+                "endpoint_id": endpoint_id,
+                "funct": funct,
+                "params": sync_task.__dict__["attribute_values"],
             },
-            MessageBody=Utility.json_dumps(
-                {"params": sync_task.__dict__["attribute_values"]}
-            ),
-            MessageGroupId=f"{tx_type}-{id}",
         )
 
     return
