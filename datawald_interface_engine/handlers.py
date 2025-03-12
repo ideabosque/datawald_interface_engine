@@ -436,7 +436,7 @@ def insert_update_sync_task_handler(info, **kwargs):
         endpoint_id = sync_task.target
         funct = sync_task_notification[sync_task.target][tx_type]
 
-        Utility.invoke_funct_on_aws_sqs(
+        Utility._invoke_funct_on_aws_sqs(
             info.context.get("logger"),
             task_queue,
             f"{tx_type}-{id}",
